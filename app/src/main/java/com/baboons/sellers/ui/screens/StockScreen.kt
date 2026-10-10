@@ -80,7 +80,7 @@ fun StockScreen(
                         }
                     },
                     enabled = !enviando,
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = BaboonsBlue)
                 ) {
                     Text(

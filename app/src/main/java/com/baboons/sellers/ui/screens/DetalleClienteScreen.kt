@@ -71,7 +71,7 @@ fun DetalleClienteScreen(
                 color = BaboonsSurface
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Button(

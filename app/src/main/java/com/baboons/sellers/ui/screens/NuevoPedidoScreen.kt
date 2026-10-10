@@ -423,7 +423,7 @@ fun CarritoView(
             shadowElevation = 8.dp,
             border = BorderStroke(1.dp, BaboonsBorder)
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(modifier = Modifier.navigationBarsPadding().padding(20.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Total Estimado", color = BaboonsTextSecondary)
                     Text("$${String.format("%,.0f", carrito.sumOf { it.subtotal })}", color = BaboonsBlue, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
