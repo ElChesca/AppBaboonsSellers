@@ -212,8 +212,8 @@ fun DetalleClienteScreen(
                         Button(
                             onClick = {
                                 onMarcarResultado(resultado, obs) { ok, m ->
-                                    msg = m; msgError = !ok
-                                    if (ok) { resultado = ""; obs = "" }
+                                    if (ok) { resultado = ""; obs = ""; onBack() }
+                                    else { msg = m; msgError = true }
                                 }
                             },
                             enabled = resultado.isNotBlank(),
