@@ -117,7 +117,7 @@ class HomeViewModel @Inject constructor(
                     com.baboons.sellers.data.remote.VisitaRequest(visitado = true, observaciones = observaciones)
                 )
                 if (resp.isSuccessful) {
-                    hojaRutaClienteDao.updateVisita(hojaRutaId, clienteId, true)
+                    hojaRutaClienteDao.updateResultadoVisita(hojaRutaId, clienteId, true, observaciones)
                     onResult(true, "Visita registrada")
                 } else {
                     onResult(false, "Error del servidor (${resp.code()})")

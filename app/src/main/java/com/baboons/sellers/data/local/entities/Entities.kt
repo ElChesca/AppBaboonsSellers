@@ -36,7 +36,8 @@ data class HojaRutaClienteEntity(
     val hoja_ruta_id: Int,
     val cliente_id: Int,
     val visitado: Boolean = false,
-    val item_id: Int? = null // id de hoja_ruta_items en el server (para PUT visita)
+    val item_id: Int? = null, // id de hoja_ruta_items en el server (para PUT visita)
+    val resultado_visita: String? = null // "No estaba — porton cerrado" (local, se muestra en la tarjeta)
 )
 
 @Entity(tableName = "zonas")

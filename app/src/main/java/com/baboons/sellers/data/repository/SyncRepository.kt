@@ -56,10 +56,10 @@ class SyncRepository @Inject constructor(
                         val existingMappings = db.hojaRutaClienteDao().getAllList()
                         db.hojaRutaClienteDao().deleteAll()
                         db.hojaRutaClienteDao().upsertAll(mappingList.map { dto ->
-                            val isVisited = existingMappings.any { 
-                                it.hoja_ruta_id == dto.hoja_ruta_id && it.cliente_id == dto.cliente_id && it.visitado 
+                            val prev = existingMappings.firstOrNull {
+                                it.hoja_ruta_id == dto.hoja_ruta_id && it.cliente_id == dto.cliente_id
                             }
-                            HojaRutaClienteEntity(dto.hoja_ruta_id, dto.cliente_id, isVisited, dto.id)
+                            HojaRutaClienteEntity(dto.hoja_ruta_id, dto.cliente_id, prev?.visitado == true, dto.id, prev?.resultado_visita)
                         })
                     }
 

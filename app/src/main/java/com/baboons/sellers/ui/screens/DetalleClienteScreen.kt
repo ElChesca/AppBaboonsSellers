@@ -213,6 +213,7 @@ fun DetalleClienteScreen(
                             onClick = {
                                 onMarcarResultado(resultado, obs) { ok, m ->
                                     msg = m; msgError = !ok
+                                    if (ok) { resultado = ""; obs = "" }
                                 }
                             },
                             enabled = resultado.isNotBlank(),

@@ -164,6 +164,9 @@ interface HojaRutaClienteDao {
     @Query("UPDATE hoja_ruta_clientes SET visitado = :visitado WHERE hoja_ruta_id = :hojaRutaId AND cliente_id = :clienteId")
     suspend fun updateVisita(hojaRutaId: Int, clienteId: Int, visitado: Boolean)
 
+    @Query("UPDATE hoja_ruta_clientes SET visitado = :visitado, resultado_visita = :resultado WHERE hoja_ruta_id = :hojaRutaId AND cliente_id = :clienteId")
+    suspend fun updateResultadoVisita(hojaRutaId: Int, clienteId: Int, visitado: Boolean, resultado: String?)
+
     @Query("DELETE FROM hoja_ruta_clientes")
     suspend fun deleteAll()
 }

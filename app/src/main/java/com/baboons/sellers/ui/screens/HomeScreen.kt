@@ -67,6 +67,11 @@ fun HomeScreen(
         hojaRutaClientes.filter { it.hoja_ruta_id == selectedHrId && it.visitado }.map { it.cliente_id }.toSet()
     }
 
+    val resultadosVisita: Map<Int, String> = remember(hojaRutaClientes, selectedHrId) {
+        hojaRutaClientes.filter { it.hoja_ruta_id == selectedHrId && it.resultado_visita != null }
+            .associate { it.cliente_id to it.resultado_visita!! }
+    }
+
     val totalCompletados: Int = remember(clientesConPedidoIds, clientesVisitadosIds) {
         (clientesConPedidoIds.asIterable() + clientesVisitadosIds.asIterable()).toSet().size
     }
@@ -314,6 +319,7 @@ fun HomeScreen(
                         cliente = cliente, 
                         isVisited = isVisited,
                         hasOrder = hasOrder,
+                        resultadoVisita = resultadosVisita[cliente.id],
                         onToggleVisit = { 
                             selectedHrId?.let { hrId -> 
                                 viewModel.toggleVisita(cliente.id, hrId, !isVisited) 
@@ -360,6 +366,7 @@ fun ClienteCard(
     cliente: ClienteEntity, 
     isVisited: Boolean,
     hasOrder: Boolean,
+    resultadoVisita: String? = null,
     onToggleVisit: () -> Unit,
     onClick: () -> Unit,
     onClickCart: () -> Unit
@@ -418,6 +425,15 @@ fun ClienteCard(
                     color = BaboonsTextSecondary,
                     maxLines = 1
                 )
+                resultadoVisita?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = BaboonsWarning,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1
+                    )
+                }
             }
 
             // Botones de acción
