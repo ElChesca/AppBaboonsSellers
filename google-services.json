@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "94328793405",
+    "project_id": "appbaboonssellers",
+    "storage_bucket": "appbaboonssellers.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:94328793405:android:d35e050161191f172f7d54",
+        "android_client_info": {
+          "package_name": "com.baboons.sellers"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyhl0aoieqrDImWmh_Djt5_g0DJAEN0CE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
