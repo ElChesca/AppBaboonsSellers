@@ -37,6 +37,7 @@ fun HomeScreen(
     onVerPedidos: () -> Unit,
     onVerMapa: () -> Unit,
     onVerStock: () -> Unit,
+    onClienteCart: (clienteId: Int) -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -318,7 +319,8 @@ fun HomeScreen(
                                 viewModel.toggleVisita(cliente.id, hrId, !isVisited) 
                             } 
                         },
-                        onClick = { onClienteClick(cliente.id) }
+                        onClick = { onClienteClick(cliente.id) },
+                        onClickCart = { onClienteCart(cliente.id) }
                     )
                 }
             }
@@ -359,7 +361,8 @@ fun ClienteCard(
     isVisited: Boolean,
     hasOrder: Boolean,
     onToggleVisit: () -> Unit,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onClickCart: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
@@ -429,7 +432,7 @@ fun ClienteCard(
                 }
                 
                 // Botón Pedido (Carrito)
-                IconButton(onClick = onClick) {
+                IconButton(onClick = onClickCart) {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
                         color = if (hasOrder) BaboonsBlue else BaboonsBlue.copy(alpha = 0.1f),

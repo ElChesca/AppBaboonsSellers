@@ -139,8 +139,11 @@ fun MainNavigation() {
             val hrClientes by homeViewModel.hojaRutaClientes.collectAsState(initial = emptyList())
             HomeScreen(
                 onClienteClick = { id -> 
+                    navController.navigate(Routes.detalleCliente(id)) 
+                },
+                onClienteCart = { id ->
                     val hrId = selectedHrId ?: hrClientes.find { it.cliente_id == id }?.hoja_ruta_id
-                    navController.navigate(Routes.nuevoPedido(id, hrId)) 
+                    navController.navigate(Routes.nuevoPedido(id, hrId))
                 },
                 onLogout = {
                     com.baboons.sellers.service.LocationTrackingService.stop(context)
