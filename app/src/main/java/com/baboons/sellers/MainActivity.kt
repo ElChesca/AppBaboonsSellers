@@ -38,6 +38,7 @@ object Routes {
     const val MAPA = "mapa"
     const val STOCK = "stock"
     const val RESUMEN = "resumen"
+    const val NOVEDAD = "novedad"
 
     fun nuevoPedido(clienteId: Int, hrId: Int?) = "nuevo_pedido/$clienteId/${hrId ?: -1}"
     fun detalleCliente(clienteId: Int) = "detalle_cliente/$clienteId"
@@ -154,7 +155,8 @@ fun MainNavigation() {
                 onVerPedidos = { navController.navigate(Routes.MIS_PEDIDOS) },
                 onVerMapa = { navController.navigate(Routes.MAPA) },
                 onVerStock = { navController.navigate(Routes.STOCK) },
-                onVerResumen = { navController.navigate(Routes.RESUMEN) }
+                onVerResumen = { navController.navigate(Routes.RESUMEN) },
+                onReportarNovedad = { navController.navigate(Routes.NOVEDAD) }
             )
         }
 
@@ -224,6 +226,22 @@ fun MainNavigation() {
                 pedidos = pedidos,
                 cobros = cobros,
                 hojaRutaId = selectedHrId,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.NOVEDAD) {
+            val clientes by homeViewModel.clientes.collectAsState()
+            val hrClientes by homeViewModel.hojaRutaClientes.collectAsState()
+            val selectedHrId by homeViewModel.selectedHojaRutaId.collectAsState()
+            val clientesRuta = remember(clientes, hrClientes, selectedHrId) {
+                clientes.filter { c -> hrClientes.any { it.hoja_ruta_id == selectedHrId && it.cliente_id == c.id } }
+            }
+            NovedadScreen(
+                clientesRuta = clientesRuta,
+                onReportar = { tipo, obs, clienteId, cb ->
+                    homeViewModel.reportarNovedad(tipo, obs, clienteId, cb)
+                },
                 onBack = { navController.popBackStack() }
             )
         }

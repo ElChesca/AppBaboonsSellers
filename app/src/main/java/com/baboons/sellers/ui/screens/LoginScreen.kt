@@ -220,7 +220,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
 
             Spacer(modifier = Modifier.height(32.dp))
             Text(
-                text = "Multinegocio Baboons © 2026 - v1.5.0-staging", // ✨ Marca de versión inyectada
+                text = "Multinegocio Baboons © 2026 - v1.6.0-staging", // ✨ Marca de versión inyectada
                 fontSize = 12.sp,
                 color = BaboonsTextSecondary
             )

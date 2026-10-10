@@ -38,6 +38,7 @@ fun HomeScreen(
     onVerMapa: () -> Unit,
     onVerStock: () -> Unit,
     onVerResumen: () -> Unit,
+    onReportarNovedad: () -> Unit,
     onClienteCart: (clienteId: Int) -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -194,6 +195,19 @@ fun HomeScreen(
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
                 NavigationDrawerItem(
+                    label = { Text("Reportar Novedad", fontWeight = FontWeight.Medium) },
+                    selected = false,
+                    onClick = {
+                        scope.launch {
+                            drawerState.close()
+                            onReportarNovedad()
+                        }
+                    },
+                    icon = { Icon(Icons.Default.ReportProblem, null) },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                    colors = NavigationDrawerItemDefaults.colors(unselectedIconColor = BaboonsWarning, unselectedTextColor = BaboonsWarning)
+                )
+                NavigationDrawerItem(
                     label = { Text("Mapa de Ruta", fontWeight = FontWeight.Medium) },
                     selected = false,
                     onClick = { 
@@ -346,7 +360,7 @@ fun HomeScreen(
 
             // ✨ Footer con Versión
             Text(
-                text = "Multinegocio Baboons © 2026 - v1.5.0-staging",
+                text = "Multinegocio Baboons © 2026 - v1.6.0-staging",
                 fontSize = 10.sp,
                 color = BaboonsTextSecondary,
                 textAlign = TextAlign.Center,

@@ -209,6 +209,12 @@ data class CobroRequest(
     val metodo_pago: String
 )
 
+data class NovedadRequest(
+    val tipo: String,
+    val observaciones: String = "",
+    val cliente_id: Int? = null
+)
+
 // ─── API Interface ────────────────────────────────────────────────────────────
 
 interface BaboonsApi {
@@ -282,6 +288,13 @@ interface BaboonsApi {
     suspend fun registrarCobro(
         @Path("hrId") hrId: Int,
         @Body body: CobroRequest
+    ): Response<Any>
+
+    // Novedad de ruta reportada por el chofer (tab Novedades en la web + notificación)
+    @POST("api/hojas-ruta/{hrId}/novedades")
+    suspend fun reportarNovedad(
+        @Path("hrId") hrId: Int,
+        @Body body: NovedadRequest
     ): Response<Any>
 }
 

@@ -178,6 +178,27 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /** Novedad de ruta (camión roto, cliente cerrado, etc.) -> notificación al admin. */
+    fun reportarNovedad(tipo: String, obs: String, clienteId: Int?, onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            val hrId = _selectedHojaRutaId.value
+            if (hrId == null) {
+                onResult(false, "No hay ruta seleccionada")
+                return@launch
+            }
+            try {
+                val resp = api.reportarNovedad(
+                    hrId,
+                    com.baboons.sellers.data.remote.NovedadRequest(tipo, obs, clienteId)
+                )
+                if (resp.isSuccessful) onResult(true, "Novedad reportada al admin")
+                else onResult(false, "Error del servidor (${resp.code()})")
+            } catch (e: Exception) {
+                onResult(false, "Sin conexión: ${e.message}")
+            }
+        }
+    }
+
     fun sync(negocioId: Int) {
         viewModelScope.launch {
             _isSyncing.value = true
