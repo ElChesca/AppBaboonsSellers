@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.*
 import com.baboons.sellers.data.local.entities.ClienteEntity
 import com.baboons.sellers.ui.theme.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun DetalleClienteScreen(
     clienteId: Int,
