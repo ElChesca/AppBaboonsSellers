@@ -1,7 +1,10 @@
 package com.baboons.sellers.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.res.painterResource
+import com.baboons.sellers.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -108,10 +111,15 @@ fun HomeScreen(
                     Surface(
                         modifier = Modifier.size(60.dp),
                         shape = RoundedCornerShape(12.dp),
-                        color = BaboonsBlue
+                        color = BaboonsSurface,
+                        border = BorderStroke(0.5.dp, BaboonsBorder)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text("🐒", fontSize = 32.sp)
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_logo),
+                                contentDescription = "Logo",
+                                modifier = Modifier.size(48.dp)
+                            )
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
