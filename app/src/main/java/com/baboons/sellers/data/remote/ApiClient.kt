@@ -98,7 +98,8 @@ data class HojaRutaDto(
     val estado: String,
     val fecha: String,
     val vendedor_id: Int,
-    val turnos: String? = null
+    val turnos: String? = null,
+    val numero_interno: Int? = null
 )
 
 data class PedidoItemDto(

@@ -27,7 +27,8 @@ data class HojaRutaEntity(
     val estado: String,      // "activa" | "completada" | "pendiente"
     val fecha: String,
     val vendedor_id: Int,
-    val turnos: String? = null
+    val turnos: String? = null,
+    val numero_interno: Int? = null
 )
 
 @Entity(tableName = "hoja_ruta_clientes", primaryKeys = ["hoja_ruta_id", "cliente_id"])

@@ -231,7 +231,7 @@ fun HomeScreen(
             // ✨ Selector de Hoja de Ruta (Dropdown)
             if (hojasRuta.isNotEmpty()) {
                 var expanded by remember { mutableStateOf(false) }
-                val currentHrName = hojasRuta.find { it.id == selectedHrId }?.let { "Ruta #${it.id} (${it.estado})" } ?: "Seleccionar Ruta"
+                val currentHrName = hojasRuta.find { it.id == selectedHrId }?.let { "Ruta #${it.numero_interno ?: it.id} (${it.estado})" } ?: "Seleccionar Ruta"
 
                 Box(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
                     Surface(
@@ -250,7 +250,7 @@ fun HomeScreen(
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, modifier = Modifier.fillMaxWidth(0.8f)) {
                         hojasRuta.forEach { hr ->
                             DropdownMenuItem(
-                                text = { Text("Ruta #${hr.id} (${hr.estado})") },
+                                text = { Text("Ruta #${hr.numero_interno ?: hr.id} (${hr.estado})") },
                                 onClick = { viewModel.selectHojaRuta(hr.id); expanded = false }
                             )
                         }

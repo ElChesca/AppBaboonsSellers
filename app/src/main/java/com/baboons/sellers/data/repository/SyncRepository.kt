@@ -180,6 +180,7 @@ class SyncRepository @Inject constructor(
         estado = estado,
         fecha = fecha,
         vendedor_id = vendedor_id,
-        turnos = turnos
+        turnos = turnos,
+        numero_interno = numero_interno
     )
 }
