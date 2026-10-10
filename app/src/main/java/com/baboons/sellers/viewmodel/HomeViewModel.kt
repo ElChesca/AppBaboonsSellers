@@ -23,6 +23,7 @@ class HomeViewModel @Inject constructor(
     private val hojaRutaClienteDao: HojaRutaClienteDao,
     private val pedidoPendienteDao: PedidoPendienteDao,
     private val productoDao: ProductoDao,
+    private val cobroLocalDao: CobroLocalDao,
     private val api: com.baboons.sellers.data.remote.BaboonsApi,
     private val syncRepository: SyncRepository,
     private val app: Application
@@ -59,6 +60,13 @@ class HomeViewModel @Inject constructor(
         )
 
     val pedidos: StateFlow<List<PedidoPendienteEntity>> = pedidoPendienteDao.getAll()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val cobros: StateFlow<List<CobroLocalEntity>> = cobroLocalDao.getAll()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -136,7 +144,16 @@ class HomeViewModel @Inject constructor(
                     hojaRutaId,
                     com.baboons.sellers.data.remote.CobroRequest(clienteId, negocioId, monto, metodo)
                 )
-                if (resp.isSuccessful) onResult(true, "Cobro registrado — el admin lo confirma")
+                if (resp.isSuccessful) {
+                    val nombre = clientes.value.firstOrNull { it.id == clienteId }?.nombre ?: "Cliente #$clienteId"
+                    cobroLocalDao.insertar(
+                        com.baboons.sellers.data.local.entities.CobroLocalEntity(
+                            cliente_id = clienteId, cliente_nombre = nombre,
+                            hoja_ruta_id = hojaRutaId, monto = monto, metodo_pago = metodo
+                        )
+                    )
+                    onResult(true, "Cobro registrado — el admin lo confirma")
+                }
                 else onResult(false, "Error del servidor (${resp.code()}): ${resp.errorBody()?.string() ?: ""}")
             } catch (e: Exception) {
                 onResult(false, "Sin conexión: ${e.message}")

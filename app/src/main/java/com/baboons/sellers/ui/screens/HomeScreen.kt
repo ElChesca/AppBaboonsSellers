@@ -37,6 +37,7 @@ fun HomeScreen(
     onVerPedidos: () -> Unit,
     onVerMapa: () -> Unit,
     onVerStock: () -> Unit,
+    onVerResumen: () -> Unit,
     onClienteCart: (clienteId: Int) -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -178,6 +179,18 @@ fun HomeScreen(
                         }
                     },
                     icon = { Icon(Icons.Default.Warehouse, null) },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+                NavigationDrawerItem(
+                    label = { Text("Resumen de Jornada", fontWeight = FontWeight.Medium) },
+                    selected = false,
+                    onClick = {
+                        scope.launch {
+                            drawerState.close()
+                            onVerResumen()
+                        }
+                    },
+                    icon = { Icon(Icons.Default.Assessment, null) },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
                 NavigationDrawerItem(

@@ -37,6 +37,7 @@ object Routes {
     const val PEDIDOS_PENDIENTES = "pedidos_pendientes"
     const val MAPA = "mapa"
     const val STOCK = "stock"
+    const val RESUMEN = "resumen"
 
     fun nuevoPedido(clienteId: Int, hrId: Int?) = "nuevo_pedido/$clienteId/${hrId ?: -1}"
     fun detalleCliente(clienteId: Int) = "detalle_cliente/$clienteId"
@@ -152,7 +153,8 @@ fun MainNavigation() {
                 },
                 onVerPedidos = { navController.navigate(Routes.MIS_PEDIDOS) },
                 onVerMapa = { navController.navigate(Routes.MAPA) },
-                onVerStock = { navController.navigate(Routes.STOCK) }
+                onVerStock = { navController.navigate(Routes.STOCK) },
+                onVerResumen = { navController.navigate(Routes.RESUMEN) }
             )
         }
 
@@ -206,6 +208,22 @@ fun MainNavigation() {
             StockScreen(
                 productos = productos,
                 onPedirRefuerzo = { items, cb -> homeViewModel.pedirRefuerzo(items, cb) },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.RESUMEN) {
+            val clientes by homeViewModel.clientes.collectAsState()
+            val hrClientes by homeViewModel.hojaRutaClientes.collectAsState()
+            val pedidos by homeViewModel.pedidos.collectAsState()
+            val cobros by homeViewModel.cobros.collectAsState()
+            val selectedHrId by homeViewModel.selectedHojaRutaId.collectAsState()
+            ResumenJornadaScreen(
+                clientes = clientes,
+                hojaRutaClientes = hrClientes,
+                pedidos = pedidos,
+                cobros = cobros,
+                hojaRutaId = selectedHrId,
                 onBack = { navController.popBackStack() }
             )
         }

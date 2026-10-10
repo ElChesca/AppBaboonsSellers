@@ -65,4 +65,7 @@ object AppModule {
 
     @Provides
     fun providePosicionPendienteDao(db: AppDatabase) = db.posicionPendienteDao()
+
+    @Provides
+    fun provideCobroLocalDao(db: AppDatabase) = db.cobroLocalDao()
 }

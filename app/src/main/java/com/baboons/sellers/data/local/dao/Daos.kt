@@ -170,3 +170,12 @@ interface HojaRutaClienteDao {
     @Query("DELETE FROM hoja_ruta_clientes")
     suspend fun deleteAll()
 }
+
+@Dao
+interface CobroLocalDao {
+    @Insert
+    suspend fun insertar(cobro: CobroLocalEntity)
+
+    @Query("SELECT * FROM cobros_realizados ORDER BY creado_en DESC")
+    fun getAll(): Flow<List<CobroLocalEntity>>
+}

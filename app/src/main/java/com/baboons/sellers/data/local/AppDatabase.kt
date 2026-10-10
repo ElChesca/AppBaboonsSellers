@@ -16,9 +16,10 @@ import com.baboons.sellers.data.local.entities.*
         ListaPrecioEntity::class,
         HojaRutaEntity::class,
         HojaRutaClienteEntity::class,
-        PosicionPendienteEntity::class
+        PosicionPendienteEntity::class,
+        CobroLocalEntity::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -32,4 +33,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun hojaRutaDao(): HojaRutaDao
     abstract fun hojaRutaClienteDao(): HojaRutaClienteDao
     abstract fun posicionPendienteDao(): PosicionPendienteDao
+    abstract fun cobroLocalDao(): CobroLocalDao
 }

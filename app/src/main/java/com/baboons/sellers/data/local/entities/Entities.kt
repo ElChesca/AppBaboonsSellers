@@ -109,3 +109,15 @@ data class PosicionPendienteEntity(
     val speed: Double? = null,
     val ts: Long = System.currentTimeMillis()
 )
+
+// Cobros que el chofer registro en ruta (espejo local del POST /cobrar-cc)
+@Entity(tableName = "cobros_realizados")
+data class CobroLocalEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val cliente_id: Int,
+    val cliente_nombre: String,
+    val hoja_ruta_id: Int,
+    val monto: Double,
+    val metodo_pago: String,
+    val creado_en: Long = System.currentTimeMillis()
+)
