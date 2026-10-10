@@ -22,6 +22,8 @@ class HomeViewModel @Inject constructor(
     private val hojaRutaDao: HojaRutaDao,
     private val hojaRutaClienteDao: HojaRutaClienteDao,
     private val pedidoPendienteDao: PedidoPendienteDao,
+    private val productoDao: ProductoDao,
+    private val api: com.baboons.sellers.data.remote.BaboonsApi,
     private val syncRepository: SyncRepository,
     private val app: Application
 ) : ViewModel() {
@@ -63,13 +65,54 @@ class HomeViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
+    val productos: StateFlow<List<ProductoEntity>> = productoDao.getAll()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
     fun selectHojaRuta(id: Int?) {
         _selectedHojaRutaId.value = id
     }
 
     fun toggleVisita(clienteId: Int, hojaRutaId: Int, visitado: Boolean) {
         viewModelScope.launch {
+            // Marca local inmediata
             hojaRutaClienteDao.updateVisita(hojaRutaId, clienteId, visitado)
+            // Aviso al server (el admin lo ve en la web). Si falla, se revierte.
+            val item = hojaRutaClientes.value.firstOrNull {
+                it.hoja_ruta_id == hojaRutaId && it.cliente_id == clienteId
+            }
+            val itemId = item?.item_id ?: return@launch
+            try {
+                val resp = api.updateVisitaItem(
+                    hojaRutaId, itemId,
+                    com.baboons.sellers.data.remote.VisitaRequest(visitado = visitado)
+                )
+                if (!resp.isSuccessful) {
+                    hojaRutaClienteDao.updateVisita(hojaRutaId, clienteId, !visitado)
+                }
+            } catch (e: Exception) {
+                hojaRutaClienteDao.updateVisita(hojaRutaId, clienteId, !visitado)
+            }
+        }
+    }
+
+    fun pedirRefuerzo(items: List<com.baboons.sellers.data.remote.RefuerzoItem>, onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            val hrId = _selectedHojaRutaId.value
+            if (hrId == null) {
+                onResult(false, "No hay ruta seleccionada")
+                return@launch
+            }
+            try {
+                val resp = api.pedirRefuerzo(hrId, com.baboons.sellers.data.remote.RefuerzoRequest(items))
+                if (resp.isSuccessful) onResult(true, "Refuerzo enviado al depósito")
+                else onResult(false, "Error del servidor (${resp.code()})")
+            } catch (e: Exception) {
+                onResult(false, "Sin conexión: ${e.message}")
+            }
         }
     }
 

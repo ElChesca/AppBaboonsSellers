@@ -18,7 +18,7 @@ import com.baboons.sellers.data.local.entities.*
         HojaRutaClienteEntity::class,
         PosicionPendienteEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

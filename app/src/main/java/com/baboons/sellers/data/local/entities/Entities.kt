@@ -35,7 +35,8 @@ data class HojaRutaEntity(
 data class HojaRutaClienteEntity(
     val hoja_ruta_id: Int,
     val cliente_id: Int,
-    val visitado: Boolean = false
+    val visitado: Boolean = false,
+    val item_id: Int? = null // id de hoja_ruta_items en el server (para PUT visita)
 )
 
 @Entity(tableName = "zonas")

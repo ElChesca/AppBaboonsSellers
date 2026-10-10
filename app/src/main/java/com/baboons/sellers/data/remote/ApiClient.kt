@@ -184,6 +184,24 @@ data class RastroDto(
     val ts: String? = null
 )
 
+// ─── Visita a cliente / Pedido de refuerzo ───────────────────────────────────
+
+data class VisitaRequest(
+    val visitado: Boolean,
+    val observaciones: String? = null,
+    val fecha_visita_local: String? = null
+)
+
+data class RefuerzoItem(
+    val producto_id: Int,
+    val cantidad: Double
+)
+
+data class RefuerzoRequest(
+    val items: List<RefuerzoItem>,
+    val observaciones: String = ""
+)
+
 // ─── API Interface ────────────────────────────────────────────────────────────
 
 interface BaboonsApi {
@@ -236,6 +254,21 @@ interface BaboonsApi {
     // Rastro propio del vendedor para el mapa de la app
     @GET("api/negocios/{negocioId}/mobile/mi-rastro")
     suspend fun getMiRastro(@Path("negocioId") negocioId: Int, @Query("fecha") fecha: String? = null): Response<List<RastroDto>>
+
+    // Marcar cliente visitado en una hoja de ruta
+    @PUT("api/hoja_ruta/{hrId}/item/{itemId}")
+    suspend fun updateVisitaItem(
+        @Path("hrId") hrId: Int,
+        @Path("itemId") itemId: Int,
+        @Body body: VisitaRequest
+    ): Response<Any>
+
+    // Pedido de refuerzo de mercadería al depósito (Alertas de Refuerzo en la web)
+    @POST("api/hojas-ruta/{hrId}/refuerzos")
+    suspend fun pedirRefuerzo(
+        @Path("hrId") hrId: Int,
+        @Body body: RefuerzoRequest
+    ): Response<Any>
 }
 
 // ─── Cliente HTTP ─────────────────────────────────────────────────────────────

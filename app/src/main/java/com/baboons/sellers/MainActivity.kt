@@ -36,6 +36,7 @@ object Routes {
     const val MIS_PEDIDOS = "mis_pedidos"
     const val PEDIDOS_PENDIENTES = "pedidos_pendientes"
     const val MAPA = "mapa"
+    const val STOCK = "stock"
 
     fun nuevoPedido(clienteId: Int, hrId: Int?) = "nuevo_pedido/$clienteId/${hrId ?: -1}"
     fun detalleCliente(clienteId: Int) = "detalle_cliente/$clienteId"
@@ -147,7 +148,8 @@ fun MainNavigation() {
                     navController.navigate(Routes.LOGIN) { popUpTo(0) { inclusive = true } }
                 },
                 onVerPedidos = { navController.navigate(Routes.MIS_PEDIDOS) },
-                onVerMapa = { navController.navigate(Routes.MAPA) }
+                onVerMapa = { navController.navigate(Routes.MAPA) },
+                onVerStock = { navController.navigate(Routes.STOCK) }
             )
         }
 
@@ -186,6 +188,15 @@ fun MainNavigation() {
 
         composable(Routes.PEDIDOS_PENDIENTES) {
             PedidosPendientesScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(Routes.STOCK) {
+            val productos by homeViewModel.productos.collectAsState()
+            StockScreen(
+                productos = productos,
+                onPedirRefuerzo = { items, cb -> homeViewModel.pedirRefuerzo(items, cb) },
+                onBack = { navController.popBackStack() }
+            )
         }
 
         composable(Routes.MAPA) {

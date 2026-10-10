@@ -33,6 +33,7 @@ fun HomeScreen(
     onLogout: () -> Unit,
     onVerPedidos: () -> Unit,
     onVerMapa: () -> Unit,
+    onVerStock: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -151,6 +152,18 @@ fun HomeScreen(
                         } 
                     },
                     icon = { Icon(Icons.Default.ListAlt, null) },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+                NavigationDrawerItem(
+                    label = { Text("Consultar Stock", fontWeight = FontWeight.Medium) },
+                    selected = false,
+                    onClick = {
+                        scope.launch {
+                            drawerState.close()
+                            onVerStock()
+                        }
+                    },
+                    icon = { Icon(Icons.Default.Warehouse, null) },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
                 NavigationDrawerItem(

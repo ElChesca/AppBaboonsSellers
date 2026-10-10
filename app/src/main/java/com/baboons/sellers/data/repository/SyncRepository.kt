@@ -59,7 +59,7 @@ class SyncRepository @Inject constructor(
                             val isVisited = existingMappings.any { 
                                 it.hoja_ruta_id == dto.hoja_ruta_id && it.cliente_id == dto.cliente_id && it.visitado 
                             }
-                            HojaRutaClienteEntity(dto.hoja_ruta_id, dto.cliente_id, isVisited)
+                            HojaRutaClienteEntity(dto.hoja_ruta_id, dto.cliente_id, isVisited, dto.id)
                         })
                     }
 
