@@ -26,6 +26,7 @@ import com.baboons.sellers.viewmodel.HomeViewModel
 import com.baboons.sellers.data.local.entities.*
 import com.baboons.sellers.util.TokenStore
 import com.baboons.sellers.ui.theme.*
+import android.widget.Toast
 import java.util.Locale
 import kotlinx.coroutines.launch
 
@@ -38,7 +39,6 @@ fun HomeScreen(
     onVerMapa: () -> Unit,
     onVerStock: () -> Unit,
     onVerResumen: () -> Unit,
-    onReportarNovedad: () -> Unit,
     onClienteCart: (clienteId: Int) -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -55,6 +55,7 @@ fun HomeScreen(
     val pedidos by viewModel.pedidos.collectAsState()
     
     var searchQuery by remember { mutableStateOf("") }
+    var showNovedadDialog by remember { mutableStateOf(false) }
 
     // Cálculos de Indicadores (KPIs)
     val totalClientesEnRuta: Int = remember(hojaRutaClientes, selectedHrId) {
@@ -200,7 +201,7 @@ fun HomeScreen(
                     onClick = {
                         scope.launch {
                             drawerState.close()
-                            onReportarNovedad()
+                            showNovedadDialog = true
                         }
                     },
                     icon = { Icon(Icons.Default.ReportProblem, null) },
@@ -360,12 +361,26 @@ fun HomeScreen(
 
             // ✨ Footer con Versión
             Text(
-                text = "Multinegocio Baboons © 2026 - v1.6.2-staging",
+                text = "Multinegocio Baboons © 2026 - v1.6.3-staging",
                 fontSize = 10.sp,
                 color = BaboonsTextSecondary,
                 textAlign = TextAlign.Center,
             )
         }
+    }
+
+    // Modal de novedad: vive acá adentro para usar el mismo VM que tiene la ruta elegida
+    if (showNovedadDialog) {
+        NovedadDialog(
+            clientesRuta = filteredClientesByHr,
+            onReportar = { tipo, obs, clienteId, cb ->
+                viewModel.reportarNovedad(tipo, obs, clienteId) { ok, msg ->
+                    if (ok) Toast.makeText(context, "Novedad reportada al admin", Toast.LENGTH_SHORT).show()
+                    cb(ok, msg)
+                }
+            },
+            onDismiss = { showNovedadDialog = false }
+        )
     }
 }
 }

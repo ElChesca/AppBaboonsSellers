@@ -14,8 +14,8 @@ android {
         applicationId = "com.baboons.sellers"
         minSdk = 26
         targetSdk = 35
-        versionCode = 9
-        versionName = "1.6.2-staging"
+        versionCode = 10
+        versionName = "1.6.3-staging"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
