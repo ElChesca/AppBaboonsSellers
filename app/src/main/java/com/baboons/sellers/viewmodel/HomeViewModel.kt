@@ -212,6 +212,28 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /** Gasto operativo en ruta (peaje, combustible, etc.) -> gastos_operativos del ERP. */
+    fun registrarGasto(monto: Double, categoria: String, obs: String, onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            val hrId = _sharedSelectedHojaRutaId.value
+                ?: TokenStore.getHojaRutaId(app).takeIf { it > 0 }
+            if (hrId == null) {
+                onResult(false, "No hay ruta seleccionada")
+                return@launch
+            }
+            try {
+                val resp = api.registrarGasto(
+                    hrId,
+                    com.baboons.sellers.data.remote.GastoRequest(monto, categoria, obs)
+                )
+                if (resp.isSuccessful) onResult(true, "Gasto registrado")
+                else onResult(false, "Error del servidor (${resp.code()})")
+            } catch (e: Exception) {
+                onResult(false, "Sin conexión: ${e.message}")
+            }
+        }
+    }
+
     fun sync(negocioId: Int) {
         viewModelScope.launch {
             _isSyncing.value = true

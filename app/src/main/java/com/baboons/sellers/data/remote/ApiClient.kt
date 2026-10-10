@@ -215,6 +215,13 @@ data class NovedadRequest(
     val cliente_id: Int? = null
 )
 
+data class GastoRequest(
+    val monto: Double,
+    val categoria: String,
+    val descripcion: String = "",
+    val metodo_pago: String = "Efectivo"
+)
+
 // ─── API Interface ────────────────────────────────────────────────────────────
 
 interface BaboonsApi {
@@ -295,6 +302,13 @@ interface BaboonsApi {
     suspend fun reportarNovedad(
         @Path("hrId") hrId: Int,
         @Body body: NovedadRequest
+    ): Response<Any>
+
+    // Gasto operativo en ruta del chofer (cae en gastos_operativos/caja del ERP)
+    @POST("api/hojas-ruta/{hrId}/gastos")
+    suspend fun registrarGasto(
+        @Path("hrId") hrId: Int,
+        @Body body: GastoRequest
     ): Response<Any>
 }
 

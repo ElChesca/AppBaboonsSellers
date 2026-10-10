@@ -56,6 +56,7 @@ fun HomeScreen(
     
     var searchQuery by remember { mutableStateOf("") }
     var showNovedadDialog by remember { mutableStateOf(false) }
+    var showGastoDialog by remember { mutableStateOf(false) }
 
     // Cálculos de Indicadores (KPIs)
     val totalClientesEnRuta: Int = remember(hojaRutaClientes, selectedHrId) {
@@ -207,6 +208,18 @@ fun HomeScreen(
                     icon = { Icon(Icons.Default.ReportProblem, null) },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                     colors = NavigationDrawerItemDefaults.colors(unselectedIconColor = BaboonsWarning, unselectedTextColor = BaboonsWarning)
+                )
+                NavigationDrawerItem(
+                    label = { Text("Registrar Gasto", fontWeight = FontWeight.Medium) },
+                    selected = false,
+                    onClick = {
+                        scope.launch {
+                            drawerState.close()
+                            showGastoDialog = true
+                        }
+                    },
+                    icon = { Icon(Icons.Default.Receipt, null) },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
                 NavigationDrawerItem(
                     label = { Text("Mapa de Ruta", fontWeight = FontWeight.Medium) },
@@ -361,7 +374,7 @@ fun HomeScreen(
 
             // ✨ Footer con Versión
             Text(
-                text = "Multinegocio Baboons © 2026 - v1.6.3-staging",
+                text = "Multinegocio Baboons © 2026 - v1.7.0-staging",
                 fontSize = 10.sp,
                 color = BaboonsTextSecondary,
                 textAlign = TextAlign.Center,
@@ -380,6 +393,18 @@ fun HomeScreen(
                 }
             },
             onDismiss = { showNovedadDialog = false }
+        )
+    }
+
+    if (showGastoDialog) {
+        GastoDialog(
+            onRegistrar = { monto, categoria, obs, cb ->
+                viewModel.registrarGasto(monto, categoria, obs) { ok, msg ->
+                    if (ok) Toast.makeText(context, "Gasto registrado", Toast.LENGTH_SHORT).show()
+                    cb(ok, msg)
+                }
+            },
+            onDismiss = { showGastoDialog = false }
         )
     }
 }
