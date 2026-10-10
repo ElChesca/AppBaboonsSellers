@@ -23,9 +23,28 @@ fun DetalleClienteScreen(
     clienteId: Int,
     clientes: List<ClienteEntity>,
     onCrearPedido: (Int) -> Unit,
+    onRegistrarCobro: (Double, String, (Boolean, String) -> Unit) -> Unit = { _, _, cb -> cb(false, "") },
+    onMarcarResultado: (String, String, (Boolean, String) -> Unit) -> Unit = { _, _, cb -> cb(false, "") },
     onBack: () -> Unit
 ) {
     val cliente = clientes.find { it.id == clienteId } ?: return
+    var mostrarCobro by remember { mutableStateOf(false) }
+    var resultado by remember { mutableStateOf("") }
+    var obs by remember { mutableStateOf("") }
+    var msg by remember { mutableStateOf<String?>(null) }
+    var msgError by remember { mutableStateOf(false) }
+
+    if (mostrarCobro) {
+        CobroDialog(
+            onDismiss = { mostrarCobro = false },
+            onConfirm = { monto, metodo ->
+                onRegistrarCobro(monto, metodo) { ok, m ->
+                    msg = m; msgError = !ok
+                    if (ok) mostrarCobro = false
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -51,18 +70,30 @@ fun DetalleClienteScreen(
                 shadowElevation = 16.dp,
                 color = BaboonsSurface
             ) {
-                Button(
-                    onClick = { onCrearPedido(clienteId) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BaboonsBlue)
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("LEVANTAR PEDIDO", fontWeight = FontWeight.Bold)
+                    Button(
+                        onClick = { onCrearPedido(clienteId) },
+                        modifier = Modifier.weight(1f).height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = BaboonsBlue)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(Modifier.width(6.dp))
+                        Text("PEDIDO", fontWeight = FontWeight.Bold)
+                    }
+                    Button(
+                        onClick = { mostrarCobro = true },
+                        modifier = Modifier.weight(1f).height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = BaboonsSuccess)
+                    ) {
+                        Icon(Icons.Default.AttachMoney, contentDescription = null)
+                        Spacer(Modifier.width(6.dp))
+                        Text("COBRAR", fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
@@ -152,6 +183,61 @@ fun DetalleClienteScreen(
 
             item {
                 Spacer(Modifier.height(24.dp))
+                Text("RESULTADO DE LA VISITA", color = BaboonsTextSecondary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Spacer(Modifier.height(8.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = BaboonsSurface),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf("Entregado", "No estaba", "Entrega parcial", "Rechazado").forEach { r ->
+                                FilterChip(
+                                    selected = resultado == r,
+                                    onClick = { resultado = r },
+                                    label = { Text(r, fontSize = 12.sp) }
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = obs,
+                            onValueChange = { obs = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("Observación (opcional)") },
+                            singleLine = true
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Button(
+                            onClick = {
+                                onMarcarResultado(resultado, obs) { ok, m ->
+                                    msg = m; msgError = !ok
+                                }
+                            },
+                            enabled = resultado.isNotBlank(),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = BaboonsBlue)
+                        ) { Text("Guardar resultado", fontWeight = FontWeight.Bold) }
+                    }
+                }
+            }
+
+            msg?.let {
+                item {
+                    Spacer(Modifier.height(12.dp))
+                    Surface(
+                        color = if (msgError) BaboonsError.copy(alpha = 0.12f) else BaboonsSuccess.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(it, modifier = Modifier.padding(12.dp), color = if (msgError) BaboonsError else BaboonsSuccess, fontWeight = FontWeight.Medium)
+                    }
+                }
+            }
+
+            item {
+                Spacer(Modifier.height(24.dp))
                 Text("HISTORIAL RECIENTE", color = BaboonsTextSecondary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 Spacer(Modifier.height(8.dp))
             }
@@ -162,6 +248,43 @@ fun DetalleClienteScreen(
             }
         }
     }
+}
+
+@Composable
+fun CobroDialog(onDismiss: () -> Unit, onConfirm: (Double, String) -> Unit) {
+    var monto by remember { mutableStateOf("") }
+    var metodo by remember { mutableStateOf("Efectivo") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Registrar Cobro", fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = monto,
+                    onValueChange = { monto = it.filter { c -> c.isDigit() || c == '.' || c == ',' } },
+                    label = { Text("Monto") },
+                    prefix = { Text("$") },
+                    singleLine = true
+                )
+                Spacer(Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("Efectivo", "Transferencia").forEach { m ->
+                        FilterChip(selected = metodo == m, onClick = { metodo = m }, label = { Text(m) })
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val v = monto.replace(",", ".").toDoubleOrNull()
+                    if (v != null && v > 0) onConfirm(v, metodo)
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = BaboonsSuccess)
+            ) { Text("Confirmar cobro") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
 }
 
 @Composable

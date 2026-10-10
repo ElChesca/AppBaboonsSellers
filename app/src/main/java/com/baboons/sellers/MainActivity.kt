@@ -165,6 +165,14 @@ fun MainNavigation() {
                     val hrId = selectedHrId ?: hrClientes.find { it.cliente_id == id }?.hoja_ruta_id
                     navController.navigate(Routes.nuevoPedido(id, hrId)) 
                 },
+                onRegistrarCobro = { monto, metodo, cb ->
+                    val hrId = selectedHrId ?: hrClientes.find { it.cliente_id == clienteId }?.hoja_ruta_id ?: 0
+                    homeViewModel.registrarCobro(clienteId, hrId, monto, metodo, cb)
+                },
+                onMarcarResultado = { resultado, obs, cb ->
+                    val hrId = selectedHrId ?: hrClientes.find { it.cliente_id == clienteId }?.hoja_ruta_id ?: 0
+                    homeViewModel.marcarResultadoVisita(clienteId, hrId, resultado, obs, cb)
+                },
                 onBack = { navController.popBackStack() }
             )
         }

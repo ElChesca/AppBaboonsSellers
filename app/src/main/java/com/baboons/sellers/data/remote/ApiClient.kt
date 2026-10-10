@@ -202,6 +202,13 @@ data class RefuerzoRequest(
     val observaciones: String = ""
 )
 
+data class CobroRequest(
+    val cliente_id: Int,
+    val negocio_id: Int,
+    val monto: Double,
+    val metodo_pago: String
+)
+
 // ─── API Interface ────────────────────────────────────────────────────────────
 
 interface BaboonsApi {
@@ -268,6 +275,13 @@ interface BaboonsApi {
     suspend fun pedirRefuerzo(
         @Path("hrId") hrId: Int,
         @Body body: RefuerzoRequest
+    ): Response<Any>
+
+    // Cobranza de cuenta corriente del chofer (queda en borrador hasta que el admin confirma)
+    @POST("api/hojas-ruta/{hrId}/cobrar-cc")
+    suspend fun registrarCobro(
+        @Path("hrId") hrId: Int,
+        @Body body: CobroRequest
     ): Response<Any>
 }
 

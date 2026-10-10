@@ -99,6 +99,51 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /** Resultado de la visita: marca visitado=true y guarda la observación (Entregado/No estaba/...) */
+    fun marcarResultadoVisita(clienteId: Int, hojaRutaId: Int, resultado: String, obs: String, onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            val observaciones = listOf(resultado, obs).filter { it.isNotBlank() }.joinToString(" — ")
+            val item = hojaRutaClientes.value.firstOrNull {
+                it.hoja_ruta_id == hojaRutaId && it.cliente_id == clienteId
+            }
+            val itemId = item?.item_id
+            if (itemId == null) {
+                onResult(false, "Este cliente no vino con item_id; resincronizá")
+                return@launch
+            }
+            try {
+                val resp = api.updateVisitaItem(
+                    hojaRutaId, itemId,
+                    com.baboons.sellers.data.remote.VisitaRequest(visitado = true, observaciones = observaciones)
+                )
+                if (resp.isSuccessful) {
+                    hojaRutaClienteDao.updateVisita(hojaRutaId, clienteId, true)
+                    onResult(true, "Visita registrada")
+                } else {
+                    onResult(false, "Error del servidor (${resp.code()})")
+                }
+            } catch (e: Exception) {
+                onResult(false, "Sin conexión: ${e.message}")
+            }
+        }
+    }
+
+    fun registrarCobro(clienteId: Int, hojaRutaId: Int, monto: Double, metodo: String, onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            val negocioId = TokenStore.getNegocioId(app)
+            try {
+                val resp = api.registrarCobro(
+                    hojaRutaId,
+                    com.baboons.sellers.data.remote.CobroRequest(clienteId, negocioId, monto, metodo)
+                )
+                if (resp.isSuccessful) onResult(true, "Cobro registrado — el admin lo confirma")
+                else onResult(false, "Error del servidor (${resp.code()}): ${resp.errorBody()?.string() ?: ""}")
+            } catch (e: Exception) {
+                onResult(false, "Sin conexión: ${e.message}")
+            }
+        }
+    }
+
     fun pedirRefuerzo(items: List<com.baboons.sellers.data.remote.RefuerzoItem>, onResult: (Boolean, String) -> Unit) {
         viewModelScope.launch {
             val hrId = _selectedHojaRutaId.value
