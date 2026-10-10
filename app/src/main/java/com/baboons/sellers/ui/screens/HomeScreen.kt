@@ -360,7 +360,7 @@ fun HomeScreen(
 
             // ✨ Footer con Versión
             Text(
-                text = "Multinegocio Baboons © 2026 - v1.6.1-staging",
+                text = "Multinegocio Baboons © 2026 - v1.6.2-staging",
                 fontSize = 10.sp,
                 color = BaboonsTextSecondary,
                 textAlign = TextAlign.Center,

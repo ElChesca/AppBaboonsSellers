@@ -35,12 +35,18 @@ class HomeViewModel @Inject constructor(
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing = _isSyncing.asStateFlow()
 
-    // Persistida: hay mas de una instancia de este VM (una por NavBackStackEntry),
-    // y sin esto la seleccion se pierde en las otras pantallas.
-    private val _selectedHojaRutaId = MutableStateFlow(
-        TokenStore.getHojaRutaId(app).takeIf { it > 0 }
-    )
-    val selectedHojaRutaId = _selectedHojaRutaId.asStateFlow()
+    // Hay UNA instancia de este VM por NavBackStackEntry: la ruta seleccionada
+    // vive en un companion (compartida por todas las instancias) y se persiste.
+    companion object {
+        private val _sharedSelectedHojaRutaId = MutableStateFlow<Int?>(null)
+    }
+    val selectedHojaRutaId: StateFlow<Int?> = _sharedSelectedHojaRutaId
+
+    init {
+        if (_sharedSelectedHojaRutaId.value == null) {
+            _sharedSelectedHojaRutaId.value = TokenStore.getHojaRutaId(app).takeIf { it > 0 }
+        }
+    }
     
     val clientes: StateFlow<List<ClienteEntity>> = clienteDao.getAll()
         .stateIn(
@@ -85,7 +91,7 @@ class HomeViewModel @Inject constructor(
         )
 
     fun selectHojaRuta(id: Int?) {
-        _selectedHojaRutaId.value = id
+        _sharedSelectedHojaRutaId.value = id
         TokenStore.saveHojaRutaId(app, id ?: -1)
     }
 
@@ -168,7 +174,8 @@ class HomeViewModel @Inject constructor(
 
     fun pedirRefuerzo(items: List<com.baboons.sellers.data.remote.RefuerzoItem>, onResult: (Boolean, String) -> Unit) {
         viewModelScope.launch {
-            val hrId = _selectedHojaRutaId.value
+            val hrId = _sharedSelectedHojaRutaId.value
+                ?: TokenStore.getHojaRutaId(app).takeIf { it > 0 }
             if (hrId == null) {
                 onResult(false, "No hay ruta seleccionada")
                 return@launch
@@ -186,7 +193,8 @@ class HomeViewModel @Inject constructor(
     /** Novedad de ruta (camión roto, cliente cerrado, etc.) -> notificación al admin. */
     fun reportarNovedad(tipo: String, obs: String, clienteId: Int?, onResult: (Boolean, String) -> Unit) {
         viewModelScope.launch {
-            val hrId = _selectedHojaRutaId.value
+            val hrId = _sharedSelectedHojaRutaId.value
+                ?: TokenStore.getHojaRutaId(app).takeIf { it > 0 }
             if (hrId == null) {
                 onResult(false, "No hay ruta seleccionada")
                 return@launch
