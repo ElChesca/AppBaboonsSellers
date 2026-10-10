@@ -191,8 +191,8 @@ fun DetalleClienteScreen(
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("Entregado", "No estaba", "Entrega parcial", "Rechazado").forEach { r ->
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf("Entregado", "No estaba", "Parcial", "Rechazado").forEach { r ->
                                 FilterChip(
                                     selected = resultado == r,
                                     onClick = { resultado = r },
