@@ -15,6 +15,7 @@ object TokenStore {
     private const val KEY_ROL = "user_rol"
     private const val KEY_NEGOCIO_ID = "negocio_id"
     private const val KEY_NEGOCIO_NOMBRE = "negocio_nombre"
+    private const val KEY_HOJA_RUTA_ID = "hoja_ruta_id"
 
     private fun getPrefs(context: Context): android.content.SharedPreferences {
         val masterKey = MasterKey.Builder(context)
@@ -56,6 +57,11 @@ object TokenStore {
     fun getRol(context: Context): String? = getPrefs(context).getString(KEY_ROL, null)
     fun getNegocioId(context: Context): Int = getPrefs(context).getInt(KEY_NEGOCIO_ID, -1)
     fun getNegocioNombre(context: Context): String? = getPrefs(context).getString(KEY_NEGOCIO_NOMBRE, null)
+
+    fun saveHojaRutaId(context: Context, hrId: Int) {
+        getPrefs(context).edit().putInt(KEY_HOJA_RUTA_ID, hrId).apply()
+    }
+    fun getHojaRutaId(context: Context): Int = getPrefs(context).getInt(KEY_HOJA_RUTA_ID, -1)
     fun isLoggedIn(context: Context): Boolean = getToken(context) != null
 
     fun clearSession(context: Context) {

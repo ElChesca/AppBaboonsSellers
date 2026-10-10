@@ -35,7 +35,11 @@ class HomeViewModel @Inject constructor(
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing = _isSyncing.asStateFlow()
 
-    private val _selectedHojaRutaId = MutableStateFlow<Int?>(null)
+    // Persistida: hay mas de una instancia de este VM (una por NavBackStackEntry),
+    // y sin esto la seleccion se pierde en las otras pantallas.
+    private val _selectedHojaRutaId = MutableStateFlow(
+        TokenStore.getHojaRutaId(app).takeIf { it > 0 }
+    )
     val selectedHojaRutaId = _selectedHojaRutaId.asStateFlow()
     
     val clientes: StateFlow<List<ClienteEntity>> = clienteDao.getAll()
@@ -82,6 +86,7 @@ class HomeViewModel @Inject constructor(
 
     fun selectHojaRuta(id: Int?) {
         _selectedHojaRutaId.value = id
+        TokenStore.saveHojaRutaId(app, id ?: -1)
     }
 
     fun toggleVisita(clienteId: Int, hojaRutaId: Int, visitado: Boolean) {
