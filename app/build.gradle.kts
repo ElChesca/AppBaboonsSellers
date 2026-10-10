@@ -14,19 +14,19 @@ android {
         applicationId = "com.baboons.sellers"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.3.5"
+        versionCode = 4
+        versionName = "1.3.6-staging"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // URL del backend — cambiá por la de producción en release
-        buildConfigField("String", "BASE_URL", "\"https://multinegociobaboons-fly.fly.dev/\"")
+        // URL del backend — debug apunta a staging, release a producción
+        buildConfigField("String", "BASE_URL", "\"https://multinegociobaboons-staging.fly.dev/\"")
     }
 
     buildTypes {
         debug {
             isMinifyEnabled = false
-            buildConfigField("String", "BASE_URL", "\"https://multinegociobaboons-fly.fly.dev/\"")
+            buildConfigField("String", "BASE_URL", "\"https://multinegociobaboons-staging.fly.dev/\"")
         }
         release {
             isMinifyEnabled = true
