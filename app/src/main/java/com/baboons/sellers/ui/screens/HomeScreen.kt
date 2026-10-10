@@ -354,7 +354,7 @@ fun ClienteCard(
     onClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = BaboonsSurface),
         border = BorderStroke(if (hasOrder) 2.dp else 0.5.dp, if (hasOrder) BaboonsBlue else BaboonsBorder),
