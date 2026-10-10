@@ -136,6 +136,21 @@ interface HojaRutaDao {
 }
 
 @Dao
+interface PosicionPendienteDao {
+    @Insert
+    suspend fun insertar(pos: PosicionPendienteEntity)
+
+    @Query("SELECT * FROM posiciones_pendientes ORDER BY ts ASC LIMIT :limit")
+    suspend fun getPendientes(limit: Int = 100): List<PosicionPendienteEntity>
+
+    @Delete
+    suspend fun borrar(posiciones: List<PosicionPendienteEntity>)
+
+    @Query("SELECT COUNT(*) FROM posiciones_pendientes")
+    suspend fun count(): Int
+}
+
+@Dao
 interface HojaRutaClienteDao {
     @Query("SELECT * FROM hoja_ruta_clientes")
     fun getAll(): kotlinx.coroutines.flow.Flow<List<HojaRutaClienteEntity>>

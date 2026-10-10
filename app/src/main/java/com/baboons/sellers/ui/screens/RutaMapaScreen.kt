@@ -9,8 +9,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
 import com.baboons.sellers.data.local.entities.ClienteEntity
+import com.baboons.sellers.data.remote.RetrofitClient
 import com.baboons.sellers.ui.theme.BaboonsBlue
+import com.baboons.sellers.util.TokenStore
+import kotlinx.coroutines.delay
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
@@ -25,6 +29,23 @@ fun RutaMapaScreen(
     onBack: () -> Unit
 ) {
     val cameraPositionState = rememberCameraPositionState()
+    val context = LocalContext.current
+    var rastro by remember { mutableStateOf<List<LatLng>>(emptyList()) }
+
+    // ✨ Rastro del chofer: trae la traza del día y la refresca cada 60s
+    LaunchedEffect(Unit) {
+        val api = RetrofitClient.getApi { TokenStore.getToken(context) }
+        val negocioId = TokenStore.getNegocioId(context)
+        while (true) {
+            try {
+                val resp = api.getMiRastro(negocioId)
+                if (resp.isSuccessful) {
+                    rastro = resp.body()?.map { LatLng(it.lat, it.lng) } ?: emptyList()
+                }
+            } catch (_: Exception) { }
+            delay(60_000)
+        }
+    }
 
     // ✨ Auto-ajuste de cámara para mostrar todos los clientes de la ruta
     LaunchedEffect(clientes) {
@@ -72,6 +93,9 @@ fun RutaMapaScreen(
             ),
             properties = MapProperties(isMyLocationEnabled = true)
         ) {
+            if (rastro.size >= 2) {
+                Polyline(points = rastro, color = Color(0xFFE67E22), width = 8f)
+            }
             clientes.forEach { cliente ->
                 if (cliente.latitud != null && cliente.longitud != null) {
                     Marker(

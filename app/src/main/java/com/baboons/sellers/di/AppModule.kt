@@ -62,4 +62,7 @@ object AppModule {
 
     @Provides
     fun provideHojaRutaClienteDao(db: AppDatabase) = db.hojaRutaClienteDao()
+
+    @Provides
+    fun providePosicionPendienteDao(db: AppDatabase) = db.posicionPendienteDao()
 }

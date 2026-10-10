@@ -161,6 +161,28 @@ data class HojaRutaClienteDto(
     val cliente_id: Int
 )
 
+// ─── Tracking GPS del chofer ─────────────────────────────────────────────────
+
+data class PosicionTrackingDto(
+    val lat: Double,
+    val lng: Double,
+    val accuracy: Double? = null,
+    val speed: Double? = null,
+    val ts: Long? = null
+)
+
+data class TrackingBatchRequest(
+    val posiciones: List<PosicionTrackingDto>
+)
+
+data class RastroDto(
+    val lat: Double,
+    val lng: Double,
+    val precision_m: Double? = null,
+    val velocidad_kmh: Double? = null,
+    val ts: String? = null
+)
+
 // ─── API Interface ────────────────────────────────────────────────────────────
 
 interface BaboonsApi {
@@ -205,6 +227,14 @@ interface BaboonsApi {
     // Nuevo endpoint específico para rutas activas (más robusto)
     @GET("api/negocios/{negocioId}/mobile/hojas-ruta-activas")
     suspend fun getHojasRutaActivas(@Path("negocioId") negocioId: Int): Response<List<HojaRutaDto>>
+
+    // Tracking GPS del chofer: envía una o varias posiciones
+    @POST("api/negocios/{negocioId}/mobile/tracking")
+    suspend fun postTracking(@Path("negocioId") negocioId: Int, @Body body: TrackingBatchRequest): Response<Any>
+
+    // Rastro propio del vendedor para el mapa de la app
+    @GET("api/negocios/{negocioId}/mobile/mi-rastro")
+    suspend fun getMiRastro(@Path("negocioId") negocioId: Int, @Query("fecha") fecha: String? = null): Response<List<RastroDto>>
 }
 
 // ─── Cliente HTTP ─────────────────────────────────────────────────────────────

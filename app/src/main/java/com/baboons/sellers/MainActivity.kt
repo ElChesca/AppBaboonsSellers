@@ -58,10 +58,19 @@ class MainActivity : ComponentActivity() {
                 else -> { /* No hay permisos, el mapa no mostrará MyLocation */ }
             }
         }
-        locationPermissionRequest.launch(arrayOf(
+        val perms = mutableListOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION
-        ))
+        )
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            perms.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        locationPermissionRequest.launch(perms.toTypedArray())
+
+        // Tracking GPS: si hay sesión activa, arranca el servicio al abrir la app
+        if (TokenStore.isLoggedIn(this)) {
+            com.baboons.sellers.service.LocationTrackingService.start(this)
+        }
 
         // Iniciar el worker de fondo...
         val constraints = Constraints.Builder()
@@ -133,6 +142,7 @@ fun MainNavigation() {
                     navController.navigate(Routes.nuevoPedido(id, hrId)) 
                 },
                 onLogout = {
+                    com.baboons.sellers.service.LocationTrackingService.stop(context)
                     TokenStore.clearSession(context)
                     navController.navigate(Routes.LOGIN) { popUpTo(0) { inclusive = true } }
                 },

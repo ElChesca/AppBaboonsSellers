@@ -95,3 +95,14 @@ data class PedidoPendienteEntity(
     val creado_en: Long = System.currentTimeMillis(),
     val intentos_sync: Int = 0
 )
+
+// Cola offline de posiciones GPS del tracking del chofer
+@Entity(tableName = "posiciones_pendientes")
+data class PosicionPendienteEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val lat: Double,
+    val lng: Double,
+    val accuracy: Double? = null,
+    val speed: Double? = null,
+    val ts: Long = System.currentTimeMillis()
+)
