@@ -8,6 +8,7 @@ import com.baboons.sellers.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -18,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
@@ -91,13 +93,15 @@ fun HomeScreen(
         }
     }
 
-    val filteredClientesByHr = remember(clientes, selectedHrId, searchQuery, hojaRutaClientes) {
+    val esAutoVenta = hojasRuta.find { it.id == selectedHrId }?.tipo_ruta == "autoventa"
+
+    val filteredClientesByHr = remember(clientes, selectedHrId, searchQuery, hojaRutaClientes, esAutoVenta) {
         clientes.filter { cliente ->
             val matchesHr = if (selectedHrId == null) {
-                // Si no hay ruta seleccionada, no mostramos nada o mostramos todas las de este vendedor
                 false
+            } else if (esAutoVenta) {
+                true
             } else {
-                // ✨ Buscamos si el cliente está en esta ruta
                 hojaRutaClientes.any { it.hoja_ruta_id == selectedHrId && it.cliente_id == cliente.id }
             }
             
@@ -284,22 +288,39 @@ fun HomeScreen(
                 )
             }
         ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)) {
+        val tecladoAbierto = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+        val listaState = rememberLazyListState()
+        LaunchedEffect(searchQuery) {
+            if (searchQuery.isNotEmpty()) listaState.scrollToItem(0)
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .imePadding()
+                .padding(horizontal = 16.dp)
+        ) {
             
             // ✨ Indicadores (KPIs) de Progreso
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                KPIBox(modifier = Modifier.weight(1f), label = "Pendientes", value = pendientesCount.toString(), color = BaboonsBlue)
-                KPIBox(modifier = Modifier.weight(1f), label = "Pedidos", value = pedidosCount.toString(), color = BaboonsBlue)
-                KPIBox(modifier = Modifier.weight(1f), label = "Progreso", value = "$progresoPercent%", color = if (progresoPercent == 100) BaboonsSuccess else BaboonsBlue)
+                if (esAutoVenta) {
+                    KPIBox(modifier = Modifier.weight(1f), label = "Clientes", value = clientes.size.toString(), color = BaboonsBlue)
+                    KPIBox(modifier = Modifier.weight(1f), label = "Pedidos", value = pedidosCount.toString(), color = BaboonsBlue)
+                    KPIBox(modifier = Modifier.weight(1f), label = "Modo", value = "Bordo", color = BaboonsWarning)
+                } else {
+                    KPIBox(modifier = Modifier.weight(1f), label = "Pendientes", value = pendientesCount.toString(), color = BaboonsBlue)
+                    KPIBox(modifier = Modifier.weight(1f), label = "Pedidos", value = pedidosCount.toString(), color = BaboonsBlue)
+                    KPIBox(modifier = Modifier.weight(1f), label = "Progreso", value = "$progresoPercent%", color = if (progresoPercent == 100) BaboonsSuccess else BaboonsBlue)
+                }
             }
 
             // ✨ Selector de Hoja de Ruta (Dropdown)
             if (hojasRuta.isNotEmpty()) {
                 var expanded by remember { mutableStateOf(false) }
-                val currentHrName = hojasRuta.find { it.id == selectedHrId }?.let { "Ruta #${it.numero_interno ?: it.id} (${it.estado})" } ?: "Seleccionar Ruta"
+                val currentHrName = hojasRuta.find { it.id == selectedHrId }?.let { etiquetaRuta(it) } ?: "Seleccionar Ruta"
 
                 Box(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
                     Surface(
@@ -318,7 +339,7 @@ fun HomeScreen(
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, modifier = Modifier.fillMaxWidth(0.8f)) {
                         hojasRuta.forEach { hr ->
                             DropdownMenuItem(
-                                text = { Text("Ruta #${hr.numero_interno ?: hr.id} (${hr.estado})") },
+                                text = { Text(etiquetaRuta(hr)) },
                                 onClick = { viewModel.selectHojaRuta(hr.id); expanded = false }
                             )
                         }
@@ -344,14 +365,23 @@ fun HomeScreen(
                 )
             )
 
+            if (esAutoVenta && !tecladoAbierto) {
+                Text(
+                    text = "Auto-Venta: elegí cualquier cliente y vendé lo que hay en el camión.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BaboonsTextSecondary,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+
             Text(
-                text = "${filteredClientesByHr.size} clientes en esta ruta",
+                text = if (esAutoVenta) "${filteredClientesByHr.size} clientes" else "${filteredClientesByHr.size} clientes en esta ruta",
                 style = MaterialTheme.typography.labelMedium,
                 color = BaboonsTextSecondary,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 32.dp), modifier = Modifier.weight(1f)) {
+            LazyColumn(state = listaState, verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 32.dp), modifier = Modifier.weight(1f)) {
                 items(filteredClientesByHr) { cliente ->
                     val hasOrder = clientesConPedidoIds.contains(cliente.id)
                     val isVisited = clientesVisitadosIds.contains(cliente.id)
@@ -367,25 +397,27 @@ fun HomeScreen(
                             } 
                         },
                         onClick = { onClienteClick(cliente.id) },
-                        onClickCart = { onClienteCart(cliente.id) }
+                        onClickCart = { onClienteCart(cliente.id) },
+                        mostrarVisita = !esAutoVenta
                     )
                 }
             }
 
-            // ✨ Footer con Versión
-            Text(
-                text = "Multinegocio Baboons © 2026 - v1.7.0-staging",
-                fontSize = 10.sp,
-                color = BaboonsTextSecondary,
-                textAlign = TextAlign.Center,
-            )
+            if (!tecladoAbierto) {
+                Text(
+                    text = "Multinegocio Baboons © 2026 - v1.8.0-staging",
+                    fontSize = 10.sp,
+                    color = BaboonsTextSecondary,
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 
     // Modal de novedad: vive acá adentro para usar el mismo VM que tiene la ruta elegida
     if (showNovedadDialog) {
         NovedadDialog(
-            clientesRuta = filteredClientesByHr,
+            clientesRuta = if (esAutoVenta) emptyList() else filteredClientesByHr,
             onReportar = { tipo, obs, clienteId, cb ->
                 viewModel.reportarNovedad(tipo, obs, clienteId) { ok, msg ->
                     if (ok) Toast.makeText(context, "Novedad reportada al admin", Toast.LENGTH_SHORT).show()
@@ -408,6 +440,12 @@ fun HomeScreen(
         )
     }
 }
+}
+
+private fun etiquetaRuta(hr: HojaRutaEntity): String {
+    val nro = "Ruta #${hr.numero_interno ?: hr.id}"
+    val tipo = if (hr.tipo_ruta == "autoventa") "Auto-Venta" else null
+    return listOfNotNull(nro, tipo, hr.estado).joinToString(" · ")
 }
 
 @Composable
@@ -436,7 +474,8 @@ fun ClienteCard(
     resultadoVisita: String? = null,
     onToggleVisit: () -> Unit,
     onClick: () -> Unit,
-    onClickCart: () -> Unit
+    onClickCart: () -> Unit,
+    mostrarVisita: Boolean = true
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
@@ -506,12 +545,14 @@ fun ClienteCard(
             // Botones de acción
             Row(verticalAlignment = Alignment.CenterVertically) {
                 // Botón Visita (Ojo)
-                IconButton(onClick = onToggleVisit) {
-                    Icon(
-                        imageVector = if (isVisited) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = "Visita",
-                        tint = if (isVisited) BaboonsWarning else BaboonsTextSecondary.copy(alpha = 0.4f)
-                    )
+                if (mostrarVisita) {
+                    IconButton(onClick = onToggleVisit) {
+                        Icon(
+                            imageVector = if (isVisited) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = "Visita",
+                            tint = if (isVisited) BaboonsWarning else BaboonsTextSecondary.copy(alpha = 0.4f)
+                        )
+                    }
                 }
                 
                 // Botón Pedido (Carrito)

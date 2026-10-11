@@ -161,11 +161,13 @@ fun MainNavigation() {
         composable(Routes.DETALLE_CLIENTE) { backStack ->
             val clienteId = backStack.arguments?.getString("clienteId")?.toIntOrNull() ?: return@composable
             val selectedHrId by homeViewModel.selectedHojaRutaId.collectAsState()
+            val hojas by homeViewModel.hojasRuta.collectAsState()
             val clientes by homeViewModel.clientes.collectAsState(initial = emptyList())
             val hrClientes by homeViewModel.hojaRutaClientes.collectAsState(initial = emptyList())
             DetalleClienteScreen(
                 clienteId = clienteId,
                 clientes = clientes,
+                esAutoVenta = hojas.find { it.id == selectedHrId }?.tipo_ruta == "autoventa",
                 onCrearPedido = { id -> 
                     val hrId = selectedHrId ?: hrClientes.find { it.cliente_id == id }?.hoja_ruta_id
                     navController.navigate(Routes.nuevoPedido(id, hrId)) 
@@ -186,10 +188,12 @@ fun MainNavigation() {
             val clienteId = backStack.arguments?.getString("clienteId")?.toIntOrNull() ?: return@composable
             val hrIdRaw = backStack.arguments?.getString("hojaRutaId")?.toIntOrNull()
             val hrId = if (hrIdRaw == -1) null else hrIdRaw
+            val hojas by homeViewModel.hojasRuta.collectAsState()
             
             NuevoPedidoScreen(
                 clienteId = clienteId,
                 hojaRutaId = hrId,
+                esAutoVenta = hojas.find { it.id == hrId }?.tipo_ruta == "autoventa",
                 onPedidoGuardado = { navController.popBackStack(Routes.HOME, false) },
                 onBack = { navController.popBackStack() }
             )
@@ -230,12 +234,14 @@ fun MainNavigation() {
 
         composable(Routes.MAPA) {
             val selectedHrId by homeViewModel.selectedHojaRutaId.collectAsState()
+            val hojas by homeViewModel.hojasRuta.collectAsState()
             val allClientes by homeViewModel.clientes.collectAsState(initial = emptyList())
             val hrClientes by homeViewModel.hojaRutaClientes.collectAsState(initial = emptyList())
+            val esAutoVenta = hojas.find { it.id == selectedHrId }?.tipo_ruta == "autoventa"
             
-            // Filtrar clientes por ruta seleccionada (Igual que en HomeScreen)
-            val filteredMapClientes = remember(allClientes, selectedHrId, hrClientes) {
-                allClientes.filter { cliente ->
+            val filteredMapClientes = remember(allClientes, selectedHrId, hrClientes, esAutoVenta) {
+                if (esAutoVenta) allClientes
+                else allClientes.filter { cliente ->
                     if (selectedHrId == null) {
                         hrClientes.any { it.cliente_id == cliente.id }
                     } else {

@@ -3,6 +3,7 @@ package com.baboons.sellers.ui.screens
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -46,6 +47,7 @@ data class ItemCarrito(
 fun NuevoPedidoScreen(
     clienteId: Int,
     hojaRutaId: Int?,
+    esAutoVenta: Boolean = false,
     onPedidoGuardado: () -> Unit,
     onBack: () -> Unit,
     viewModel: NuevoPedidoViewModel = hiltViewModel()
@@ -70,13 +72,45 @@ fun NuevoPedidoScreen(
     var guardando by remember { mutableStateOf(false) }
     var mensajeExito by remember { mutableStateOf<String?>(null) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
+    var stockBordo by remember { mutableStateOf<List<StockAutoventaDto>>(emptyList()) }
+    var cargandoStock by remember { mutableStateOf(esAutoVenta) }
+    var errorStock by remember { mutableStateOf<String?>(null) }
+    var metodoPago by remember { mutableStateOf("Efectivo") }
 
     val totalCarrito = carrito.sumOf { it.subtotal }
+    val stockPorProducto = remember(stockBordo) { stockBordo.associate { it.producto_id to it.cantidad } }
+
+    LaunchedEffect(esAutoVenta, hojaRutaId) {
+        if (!esAutoVenta || hojaRutaId == null) return@LaunchedEffect
+        cargandoStock = true
+        errorStock = null
+        try {
+            val resp = api.getStockAutoventa(hojaRutaId)
+            if (resp.isSuccessful) stockBordo = resp.body().orEmpty()
+            else errorStock = mensajeErrorApi(resp)
+        } catch (e: Exception) {
+            errorStock = "Sin conexión para ver el stock del camión"
+        } finally {
+            cargandoStock = false
+        }
+    }
+
+    val productosBordo = remember(stockBordo) {
+        stockBordo.map {
+            ProductoEntity(
+                id = it.producto_id,
+                nombre = it.producto_nombre,
+                stock = it.cantidad,
+                precio_base = it.precio_venta
+            )
+        }
+    }
 
     // Filtrar productos
-    LaunchedEffect(busqueda, productos) {
-        productosFiltrados = if (busqueda.isBlank()) productos
-        else productos.filter {
+    LaunchedEffect(busqueda, productos, productosBordo, esAutoVenta) {
+        val base = if (esAutoVenta) productosBordo else productos
+        productosFiltrados = if (busqueda.isBlank()) base
+        else base.filter {
             it.nombre.contains(busqueda, ignoreCase = true) ||
             it.codigo_barras?.contains(busqueda) == true
         }
@@ -85,7 +119,7 @@ fun NuevoPedidoScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Nuevo Pedido", fontWeight = FontWeight.Bold) },
+                title = { Text(if (esAutoVenta) "Venta a bordo" else "Nuevo Pedido", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
@@ -122,7 +156,7 @@ fun NuevoPedidoScreen(
                     containerColor = BaboonsBlue,
                     contentColor = Color.White,
                     icon = { Icon(Icons.Default.ShoppingCart, contentDescription = null) },
-                    text = { Text("Ver pedido · $${String.format("%,.0f", totalCarrito)}") }
+                    text = { Text("${if (esAutoVenta) "Ver venta" else "Ver pedido"} · $${String.format("%,.0f", totalCarrito)}") }
                 )
             }
         }
@@ -135,12 +169,17 @@ fun NuevoPedidoScreen(
                 observaciones = observaciones,
                 onObservacionesChange = { observaciones = it },
                 onCambiarCantidad = { item, nuevaCantidad ->
-                    carrito = if (nuevaCantidad <= 0) {
+                    val tope = if (esAutoVenta) stockPorProducto[item.productoId] ?: item.cantidad else Double.MAX_VALUE
+                    val nueva = nuevaCantidad.coerceAtMost(tope)
+                    carrito = if (nueva <= 0) {
                         carrito.filter { it.productoId != item.productoId }
                     } else {
-                        carrito.map { if (it.productoId == item.productoId) it.copy(cantidad = nuevaCantidad) else it }
+                        carrito.map { if (it.productoId == item.productoId) it.copy(cantidad = nueva) else it }
                     }
                 },
+                metodoPago = if (esAutoVenta) metodoPago else null,
+                onMetodoPago = { metodoPago = it },
+                textoConfirmar = if (esAutoVenta) "CONFIRMAR VENTA" else "CONFIRMAR PEDIDO",
                 onEliminar = { item ->
                     carrito = carrito.filter { it.productoId != item.productoId }
                     if (carrito.isEmpty()) showCarrito = false
@@ -152,6 +191,51 @@ fun NuevoPedidoScreen(
                     guardando = true
                     scope.launch {
                         try {
+                            if (esAutoVenta) {
+                                if (hojaRutaId == null || negocioId == null) {
+                                    errorMsg = "No hay una hoja de Auto-Venta seleccionada"
+                                    return@launch
+                                }
+                                val resp = api.registrarVentaBordo(
+                                    hojaRutaId,
+                                    VentaBordoRequest(
+                                        cliente_id = clienteId,
+                                        negocio_id = negocioId,
+                                        metodo_pago = metodoPago,
+                                        items = carrito.map {
+                                            VentaBordoItem(it.productoId, it.cantidad, it.precioUnitario)
+                                        }
+                                    )
+                                )
+                                if (!resp.isSuccessful) {
+                                    errorMsg = mensajeErrorApi(resp)
+                                    return@launch
+                                }
+                                val cliente = viewModel.getCliente(clienteId)
+                                viewModel.guardarVentaSincronizada(
+                                    PedidoPendienteEntity(
+                                        uuid_local = UUID.randomUUID().toString(),
+                                        cliente_id = clienteId,
+                                        cliente_nombre = cliente?.nombre ?: "Cliente #$clienteId",
+                                        negocio_id = negocioId,
+                                        items_json = gson.toJson(carrito.map {
+                                            PedidoItemDto(it.productoId, it.nombre, it.cantidad, it.precioUnitario, it.listaPrecioId)
+                                        }),
+                                        total = totalCarrito,
+                                        observaciones = observaciones.ifBlank { null },
+                                        hoja_ruta_id = hojaRutaId,
+                                        estado_sync = "sincronizado",
+                                        creado_en = System.currentTimeMillis()
+                                    )
+                                ) {
+                                    mensajeExito = "Venta registrada. El admin confirma el cobro."
+                                    scope.launch {
+                                        kotlinx.coroutines.delay(1500)
+                                        onPedidoGuardado()
+                                    }
+                                }
+                                return@launch
+                            }
                             val uuid = UUID.randomUUID().toString()
                             val items = carrito.map { item ->
                                 PedidoItemDto(
@@ -238,9 +322,42 @@ fun NuevoPedidoScreen(
                     )
                 )
 
-                if (productosFiltrados.isEmpty() && busqueda.isBlank()) {
+                if (esAutoVenta && cargandoStock) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No hay productos (Sincroniza para ver inventario)", color = BaboonsTextSecondary)
+                        CircularProgressIndicator(color = BaboonsBlue)
+                    }
+                } else if (esAutoVenta && errorStock != null) {
+                    Column(
+                        Modifier.fillMaxSize().padding(24.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(errorStock!!, color = BaboonsError, textAlign = TextAlign.Center)
+                        Spacer(Modifier.height(12.dp))
+                        Button(onClick = {
+                            scope.launch {
+                                if (hojaRutaId == null) return@launch
+                                cargandoStock = true
+                                errorStock = null
+                                try {
+                                    val resp = api.getStockAutoventa(hojaRutaId)
+                                    if (resp.isSuccessful) stockBordo = resp.body().orEmpty()
+                                    else errorStock = mensajeErrorApi(resp)
+                                } catch (e: Exception) {
+                                    errorStock = "Sin conexión para ver el stock del camión"
+                                } finally {
+                                    cargandoStock = false
+                                }
+                            }
+                        }) { Text("Reintentar") }
+                    }
+                } else if (productosFiltrados.isEmpty() && busqueda.isBlank()) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            if (esAutoVenta) "No hay mercadería cargada en el camión" else "No hay productos (Sincroniza para ver inventario)",
+                            color = BaboonsTextSecondary,
+                            textAlign = TextAlign.Center
+                        )
                     }
                 } else {
                     LazyColumn(
@@ -251,12 +368,19 @@ fun NuevoPedidoScreen(
                         items(productosFiltrados) { producto ->
                             ProductoItem(
                                 producto = producto,
+                                etiquetaStock = if (esAutoVenta) "En el camión" else "Stock",
                                 onAdd = { p, precio, listaId, nombreLista ->
-                                    val existing = carrito.find { it.productoId == p.id && it.listaPrecioId == listaId }
-                                    carrito = if (existing != null) {
-                                        carrito.map { if (it.productoId == p.id && it.listaPrecioId == listaId) it.copy(cantidad = it.cantidad + 1) else it }
+                                    val tope = if (esAutoVenta) stockPorProducto[p.id] ?: 0.0 else Double.MAX_VALUE
+                                    val enCarrito = carrito.filter { it.productoId == p.id }.sumOf { it.cantidad }
+                                    if (enCarrito + 1 > tope) {
+                                        errorMsg = "No hay más stock en el camión de ${p.nombre}"
                                     } else {
-                                        carrito + ItemCarrito(p.id, p.nombre, 1.0, precio, listaId, nombreLista)
+                                        val existing = carrito.find { it.productoId == p.id && it.listaPrecioId == listaId }
+                                        carrito = if (existing != null) {
+                                            carrito.map { if (it.productoId == p.id && it.listaPrecioId == listaId) it.copy(cantidad = it.cantidad + 1) else it }
+                                        } else {
+                                            carrito + ItemCarrito(p.id, p.nombre, 1.0, precio, listaId, nombreLista)
+                                        }
                                     }
                                 }
                             )
@@ -291,6 +415,7 @@ fun NuevoPedidoScreen(
 @Composable
 fun ProductoItem(
     producto: ProductoEntity,
+    etiquetaStock: String = "Stock",
     onAdd: (ProductoEntity, Double, Int?, String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -306,7 +431,7 @@ fun ProductoItem(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(producto.nombre, fontWeight = FontWeight.Bold, color = BaboonsTextPrimary, fontSize = 16.sp)
-                    Text("Stock: ${producto.stock} | Código: ${producto.codigo_barras ?: "N/A"}", color = BaboonsTextSecondary, fontSize = 12.sp)
+                    Text("$etiquetaStock: ${producto.stock} | Código: ${producto.codigo_barras ?: "N/A"}", color = BaboonsTextSecondary, fontSize = 12.sp)
                 }
                 Icon(
                     if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
@@ -332,6 +457,16 @@ fun ProductoItem(
     }
 }
 
+private fun mensajeErrorApi(resp: retrofit2.Response<*>): String {
+    val raw = resp.errorBody()?.string().orEmpty()
+    return try {
+        com.google.gson.JsonParser.parseString(raw).asJsonObject.get("error")?.asString
+            ?: "Error del servidor (${resp.code()})"
+    } catch (e: Exception) {
+        raw.ifBlank { "Error del servidor (${resp.code()})" }
+    }
+}
+
 @Composable
 fun PrecioRow(nombre: String, precio: Double, onAdd: () -> Unit) {
     Row(
@@ -347,6 +482,7 @@ fun PrecioRow(nombre: String, precio: Double, onAdd: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CarritoView(
     carrito: List<ItemCarrito>,
@@ -357,7 +493,10 @@ fun CarritoView(
     onVolver: () -> Unit,
     onConfirmar: () -> Unit,
     guardando: Boolean,
-    mensajeExito: String?
+    mensajeExito: String?,
+    metodoPago: String? = null,
+    onMetodoPago: (String) -> Unit = {},
+    textoConfirmar: String = "CONFIRMAR PEDIDO"
 ) {
     Column(modifier = Modifier.fillMaxSize().background(BaboonsBackground)) {
         // Cabecera
@@ -397,6 +536,20 @@ fun CarritoView(
             }
 
             item {
+                if (metodoPago != null) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("COBRO", color = BaboonsTextSecondary, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("Efectivo", "Transferencia", "Cuenta Corriente").forEach { m ->
+                            FilterChip(
+                                selected = metodoPago == m,
+                                onClick = { onMetodoPago(m) },
+                                label = { Text(m) }
+                            )
+                        }
+                    }
+                }
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("Observaciones", color = BaboonsTextSecondary, fontWeight = FontWeight.Bold)
                 OutlinedTextField(
@@ -437,7 +590,7 @@ fun CarritoView(
                     enabled = !guardando
                 ) {
                     if (guardando) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                    else Text("CONFIRMAR PEDIDO", fontWeight = FontWeight.Bold)
+                    else Text(textoConfirmar, fontWeight = FontWeight.Bold)
                 }
             }
         }

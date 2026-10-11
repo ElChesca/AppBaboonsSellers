@@ -24,7 +24,8 @@ class SyncWorker(
                 applicationContext,
                 AppDatabase::class.java,
                 "baboons_sellers.db"
-            ).fallbackToDestructiveMigration().build()
+            ).addMigrations(AppDatabase.MIGRATION_11_12)
+                .fallbackToDestructiveMigration().build()
             
             val dao = db.pedidoPendienteDao()
             val api = RetrofitClient.getApi { TokenStore.getToken(applicationContext) }

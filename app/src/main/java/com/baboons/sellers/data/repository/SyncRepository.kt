@@ -181,6 +181,7 @@ class SyncRepository @Inject constructor(
         fecha = fecha,
         vendedor_id = vendedor_id,
         turnos = turnos,
-        numero_interno = numero_interno
+        numero_interno = numero_interno,
+        tipo_ruta = tipo_ruta ?: "reparto"
     )
 }
