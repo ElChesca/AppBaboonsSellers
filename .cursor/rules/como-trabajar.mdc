@@ -1,0 +1,30 @@
+---
+description: Como deben trabajar los agentes en Sellers y, si tocan el ERP, en MultinegocioBaboons
+alwaysApply: true
+---
+
+# Como trabajar
+
+Nadie trabaja directo en `main`. Cada tarea va en su propia rama efimera y su propio PR.
+
+- Prefijo obligatorio: `cursor-{nombre-del-fix}`. No reutilizar ramas viejas ni ramas de otra herramienta.
+- No mezclar tareas en un commit. No subir `.idea/vcs.xml`, `local.properties` ni secretos.
+- No desplegar desde la rama de la feature ni con cambios sueltos. El deploy se hace parado en `main`, despues del merge.
+- Despues de mergear, borrar la rama en remoto y en local.
+- Si el usuario cambia de tema y la rama actual no esta mergeada en `main`, frenar y avisarlo. Un deploy a staging desde otra rama pierde este codigo.
+
+## App Sellers
+
+- Repo `ElChesca/AppBaboonsSellers`. El celular no se actualiza con un push: hay que instalar un APK nuevo.
+- La app lee el **vendedor** de la hoja (`vendedor_id` del usuario logueado), no el chofer.
+- Hoja tradicional: estado `activa`, clientes de la hoja, pedido offline.
+- Auto-venta: estado `en_ruta`, tipo `autoventa`. El sync que la trae vive en el ERP. Sin ese deploy, el celular no la ve.
+
+## Si el cambio es en el ERP
+
+Repo `C:\Users\usuario\Documents\MultinegocioBaboons`. Mismas reglas de rama y PR, con prefijo `cursor-`.
+
+- No tocar la triversion (`APP_VERSION` en `main.js`, `service-worker.js` e `index.html`) salvo orden explicita del desarrollador.
+- En archivos del ERP no usar acentos ni la ene. No editar codigo con PowerShell.
+- No escanear la base para diagnosticar. Si hace falta SQL manual, entregarlo en el chat, siempre filtrado por `negocio_id`.
+- No hacer `fly deploy` hasta que el PR este mergeado en `main`.
