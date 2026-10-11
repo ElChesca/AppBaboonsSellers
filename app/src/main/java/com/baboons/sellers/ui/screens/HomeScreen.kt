@@ -8,6 +8,7 @@ import com.baboons.sellers.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -18,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
@@ -286,7 +288,18 @@ fun HomeScreen(
                 )
             }
         ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)) {
+        val tecladoAbierto = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+        val listaState = rememberLazyListState()
+        LaunchedEffect(searchQuery) {
+            if (searchQuery.isNotEmpty()) listaState.scrollToItem(0)
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .imePadding()
+                .padding(horizontal = 16.dp)
+        ) {
             
             // ✨ Indicadores (KPIs) de Progreso
             Row(
@@ -352,7 +365,7 @@ fun HomeScreen(
                 )
             )
 
-            if (esAutoVenta) {
+            if (esAutoVenta && !tecladoAbierto) {
                 Text(
                     text = "Auto-Venta: elegí cualquier cliente y vendé lo que hay en el camión.",
                     style = MaterialTheme.typography.bodySmall,
@@ -368,7 +381,7 @@ fun HomeScreen(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 32.dp), modifier = Modifier.weight(1f)) {
+            LazyColumn(state = listaState, verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 32.dp), modifier = Modifier.weight(1f)) {
                 items(filteredClientesByHr) { cliente ->
                     val hasOrder = clientesConPedidoIds.contains(cliente.id)
                     val isVisited = clientesVisitadosIds.contains(cliente.id)
@@ -390,13 +403,14 @@ fun HomeScreen(
                 }
             }
 
-            // ✨ Footer con Versión
-            Text(
-                text = "Multinegocio Baboons © 2026 - v1.8.0-staging",
-                fontSize = 10.sp,
-                color = BaboonsTextSecondary,
-                textAlign = TextAlign.Center,
-            )
+            if (!tecladoAbierto) {
+                Text(
+                    text = "Multinegocio Baboons © 2026 - v1.8.0-staging",
+                    fontSize = 10.sp,
+                    color = BaboonsTextSecondary,
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 
