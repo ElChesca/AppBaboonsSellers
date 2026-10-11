@@ -24,7 +24,8 @@ object AppModule {
             context,
             AppDatabase::class.java,
             "baboons_sellers.db"
-        ).fallbackToDestructiveMigration().build()
+        ).addMigrations(AppDatabase.MIGRATION_11_12)
+            .fallbackToDestructiveMigration().build()
     }
 
     @Provides

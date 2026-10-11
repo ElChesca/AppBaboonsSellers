@@ -29,6 +29,13 @@ class NuevoPedidoViewModel @Inject constructor(
             initialValue = emptyList()
         )
         
+    fun guardarVentaSincronizada(pedido: PedidoPendienteEntity, enExito: () -> Unit) {
+        viewModelScope.launch {
+            pedidoPendienteDao.insertar(pedido)
+            enExito()
+        }
+    }
+
     fun guardarPedidoOffline(pedido: PedidoPendienteEntity, enExito: () -> Unit) {
         viewModelScope.launch {
             // Guardar en Room para cola de sincronización

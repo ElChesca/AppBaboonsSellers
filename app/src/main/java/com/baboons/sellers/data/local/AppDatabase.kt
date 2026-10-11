@@ -2,6 +2,8 @@ package com.baboons.sellers.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.baboons.sellers.data.local.dao.*
 import com.baboons.sellers.data.local.entities.*
 
@@ -19,7 +21,7 @@ import com.baboons.sellers.data.local.entities.*
         PosicionPendienteEntity::class,
         CobroLocalEntity::class
     ],
-    version = 11,
+    version = 12,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -34,4 +36,14 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun hojaRutaClienteDao(): HojaRutaClienteDao
     abstract fun posicionPendienteDao(): PosicionPendienteDao
     abstract fun cobroLocalDao(): CobroLocalDao
+
+    companion object {
+        val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE hojas_ruta ADD COLUMN tipo_ruta TEXT NOT NULL DEFAULT 'reparto'"
+                )
+            }
+        }
+    }
 }

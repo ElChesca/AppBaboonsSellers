@@ -99,7 +99,28 @@ data class HojaRutaDto(
     val fecha: String,
     val vendedor_id: Int,
     val turnos: String? = null,
-    val numero_interno: Int? = null
+    val numero_interno: Int? = null,
+    val tipo_ruta: String? = "reparto"
+)
+
+data class StockAutoventaDto(
+    val producto_id: Int,
+    val producto_nombre: String,
+    val cantidad: Double,
+    val precio_venta: Double
+)
+
+data class VentaBordoItem(
+    val producto_id: Int,
+    val cantidad: Double,
+    val precio_unitario: Double
+)
+
+data class VentaBordoRequest(
+    val cliente_id: Int,
+    val negocio_id: Int,
+    val items: List<VentaBordoItem>,
+    val metodo_pago: String
 )
 
 data class PedidoItemDto(
@@ -266,6 +287,15 @@ interface BaboonsApi {
     // Nuevo endpoint específico para rutas activas (más robusto)
     @GET("api/negocios/{negocioId}/mobile/hojas-ruta-activas")
     suspend fun getHojasRutaActivas(@Path("negocioId") negocioId: Int): Response<List<HojaRutaDto>>
+
+    @GET("api/hojas-ruta/{hrId}/stock-autoventa")
+    suspend fun getStockAutoventa(@Path("hrId") hrId: Int): Response<List<StockAutoventaDto>>
+
+    @POST("api/hojas-ruta/{hrId}/venta-bordo")
+    suspend fun registrarVentaBordo(
+        @Path("hrId") hrId: Int,
+        @Body body: VentaBordoRequest
+    ): Response<Any>
 
     // Tracking GPS del chofer: envía una o varias posiciones
     @POST("api/negocios/{negocioId}/mobile/tracking")

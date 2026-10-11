@@ -25,6 +25,7 @@ fun DetalleClienteScreen(
     onCrearPedido: (Int) -> Unit,
     onRegistrarCobro: (Double, String, (Boolean, String) -> Unit) -> Unit = { _, _, cb -> cb(false, "") },
     onMarcarResultado: (String, String, (Boolean, String) -> Unit) -> Unit = { _, _, cb -> cb(false, "") },
+    esAutoVenta: Boolean = false,
     onBack: () -> Unit
 ) {
     val cliente = clientes.find { it.id == clienteId } ?: return
@@ -82,7 +83,7 @@ fun DetalleClienteScreen(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(Modifier.width(6.dp))
-                        Text("PEDIDO", fontWeight = FontWeight.Bold)
+                        Text(if (esAutoVenta) "VENDER" else "PEDIDO", fontWeight = FontWeight.Bold)
                     }
                     Button(
                         onClick = { mostrarCobro = true },
@@ -181,7 +182,7 @@ fun DetalleClienteScreen(
                 }
             }
 
-            item {
+            if (!esAutoVenta) item {
                 Spacer(Modifier.height(24.dp))
                 Text("RESULTADO DE LA VISITA", color = BaboonsTextSecondary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 Spacer(Modifier.height(8.dp))
