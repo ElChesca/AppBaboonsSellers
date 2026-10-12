@@ -163,6 +163,19 @@ class HomeViewModel @Inject constructor(
                             hoja_ruta_id = hojaRutaId, monto = monto, metodo_pago = metodo
                         )
                     )
+                    hojaRutaClienteDao.updateResultadoVisita(hojaRutaId, clienteId, true, "Entregado")
+                    val itemId = hojaRutaClientes.value.firstOrNull {
+                        it.hoja_ruta_id == hojaRutaId && it.cliente_id == clienteId
+                    }?.item_id
+                    if (itemId != null) {
+                        try {
+                            api.updateVisitaItem(
+                                hojaRutaId, itemId,
+                                com.baboons.sellers.data.remote.VisitaRequest(visitado = true, observaciones = "Entregado")
+                            )
+                        } catch (_: Exception) {
+                        }
+                    }
                     onResult(true, "Cobro registrado — el admin lo confirma")
                 }
                 else onResult(false, "Error del servidor (${resp.code()}): ${resp.errorBody()?.string() ?: ""}")

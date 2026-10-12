@@ -55,6 +55,7 @@ fun HomeScreen(
     val isSyncing by viewModel.isSyncing.collectAsState()
     val negocioNombre by viewModel.negocioNombre.collectAsState()
     val pedidos by viewModel.pedidos.collectAsState()
+    val cobros by viewModel.cobros.collectAsState()
     
     var searchQuery by remember { mutableStateOf("") }
     var showNovedadDialog by remember { mutableStateOf(false) }
@@ -71,6 +72,10 @@ fun HomeScreen(
     
     val clientesVisitadosIds: Set<Int> = remember(hojaRutaClientes, selectedHrId) {
         hojaRutaClientes.filter { it.hoja_ruta_id == selectedHrId && it.visitado }.map { it.cliente_id }.toSet()
+    }
+
+    val clientesCobradosIds: Set<Int> = remember(cobros, selectedHrId) {
+        cobros.filter { it.hoja_ruta_id == selectedHrId }.map { it.cliente_id }.toSet()
     }
 
     val resultadosVisita: Map<Int, String> = remember(hojaRutaClientes, selectedHrId) {
@@ -95,7 +100,7 @@ fun HomeScreen(
 
     val esAutoVenta = hojasRuta.find { it.id == selectedHrId }?.tipo_ruta == "autoventa"
 
-    val filteredClientesByHr = remember(clientes, selectedHrId, searchQuery, hojaRutaClientes, esAutoVenta) {
+    val filteredClientesByHr = remember(clientes, selectedHrId, searchQuery, hojaRutaClientes, esAutoVenta, clientesCobradosIds) {
         clientes.filter { cliente ->
             val matchesHr = if (selectedHrId == null) {
                 false
@@ -109,7 +114,7 @@ fun HomeScreen(
                 cliente.nombre.contains(searchQuery, ignoreCase = true) ||
                 (cliente.direccion?.contains(searchQuery, ignoreCase = true) == true)
             matchesHr && matchesSearch
-        }
+        }.sortedBy { if (clientesCobradosIds.contains(it.id)) 1 else 0 }
     }
 
     ModalNavigationDrawer(
@@ -389,11 +394,13 @@ fun HomeScreen(
                 items(filteredClientesByHr) { cliente ->
                     val hasOrder = clientesConPedidoIds.contains(cliente.id)
                     val isVisited = clientesVisitadosIds.contains(cliente.id)
+                    val cobrado = clientesCobradosIds.contains(cliente.id)
                     
                     ClienteCard(
                         cliente = cliente, 
                         isVisited = isVisited,
                         hasOrder = hasOrder,
+                        cobrado = cobrado,
                         resultadoVisita = resultadosVisita[cliente.id],
                         onToggleVisit = { 
                             selectedHrId?.let { hrId -> 
@@ -410,7 +417,7 @@ fun HomeScreen(
 
             if (!tecladoAbierto) {
                 Text(
-                    text = "Multinegocio Baboons © 2026 - v1.8.2-staging",
+                    text = "Multinegocio Baboons © 2026 - v1.8.3-staging",
                     fontSize = 10.sp,
                     color = BaboonsTextSecondary,
                     textAlign = TextAlign.Center,
@@ -479,6 +486,7 @@ fun ClienteCard(
     cliente: ClienteEntity, 
     isVisited: Boolean,
     hasOrder: Boolean,
+    cobrado: Boolean = false,
     resultadoVisita: String? = null,
     onToggleVisit: () -> Unit,
     onClick: () -> Unit,
@@ -490,7 +498,10 @@ fun ClienteCard(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = BaboonsSurface),
-        border = BorderStroke(if (hasOrder) 2.dp else 0.5.dp, if (hasOrder) BaboonsBlue else BaboonsBorder),
+        border = BorderStroke(
+            if (cobrado || hasOrder) 2.dp else 0.5.dp,
+            if (cobrado) BaboonsSuccess else if (hasOrder) BaboonsBlue else BaboonsBorder
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -540,7 +551,15 @@ fun ClienteCard(
                     color = BaboonsTextSecondary,
                     maxLines = 1
                 )
-                if (modoDescarga) {
+                if (cobrado) {
+                    Text(
+                        text = "Cobrado · Entregado",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = BaboonsSuccess,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                } else if (modoDescarga) {
                     Text(
                         text = if (hasOrder) "Carga para descargar" else "Sin carga en la hoja",
                         style = MaterialTheme.typography.labelSmall,
