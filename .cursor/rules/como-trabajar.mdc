@@ -9,9 +9,9 @@ Nadie trabaja directo en `main`. Cada tarea va en su propia rama efimera y su pr
 
 - Prefijo obligatorio: `cursor-{nombre-del-fix}`. No reutilizar ramas viejas ni ramas de otra herramienta.
 - No mezclar tareas en un commit. No subir `.idea/vcs.xml`, `local.properties` ni secretos.
-- Quien abre el PR lo mergea a `main` y borra la rama en remoto y en local. No se deja el PR abierto para que el usuario lo cierre, ni se le pide que compare ramas en GitHub.
+- En esta app, quien abre el PR lo mergea a `main` y borra la rama en remoto y en local. No se deja el PR abierto para que el usuario lo cierre, ni se le pide que compare ramas en GitHub.
 - El usuario solo despliega, y siempre parado en `main` despues del merge. Nunca desde la rama de la feature ni con cambios sueltos.
-- Si el usuario cambia de tema y la rama actual no esta mergeada en `main`, frenar, mergear y avisarlo. Un deploy a staging desde otra rama pierde este codigo.
+- Si el usuario cambia de tema y la rama actual de la app no esta mergeada en `main`, frenar, mergear y avisarlo. Un deploy a staging desde otra rama pierde este codigo.
 
 ## App Sellers
 
@@ -22,8 +22,9 @@ Nadie trabaja directo en `main`. Cada tarea va en su propia rama efimera y su pr
 
 ## Si el cambio es en el ERP
 
-Repo `C:\Users\usuario\Documents\MultinegocioBaboons`. Mismas reglas de rama y PR, con prefijo `cursor-`.
+Repo `C:\Users\usuario\Documents\MultinegocioBaboons`. Misma rama efimera con prefijo `cursor-`, pero el merge no lo hace el agente.
 
+- Los agentes tienen ESTRICTAMENTE PROHIBIDO mergear Pull Requests a `main` por cuenta propia. El agente debe crear la rama, commitear, pushear y abrir el PR. Una vez abierto el PR, el agente se detiene y le entrega el link al desarrollador. El merge a `main` es propiedad exclusiva del desarrollador, o solo se ejecuta si el usuario da la orden explícita en el chat.
 - No tocar la triversion (`APP_VERSION` en `main.js`, `service-worker.js` e `index.html`) salvo orden explicita del desarrollador.
 - En archivos del ERP no usar acentos ni la ene. No editar codigo con PowerShell.
 - No escanear la base para diagnosticar. Si hace falta SQL manual, entregarlo en el chat, siempre filtrado por `negocio_id`.
