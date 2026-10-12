@@ -173,6 +173,15 @@ fun MainNavigation() {
                 clientes = clientes,
                 esAutoVenta = hojas.find { it.id == selectedHrId }?.tipo_ruta == "autoventa",
                 pedidosCliente = pedidos.filter { it.cliente_id == clienteId && (selectedHrId == null || it.hoja_ruta_id == selectedHrId) },
+                onRegistrarRebotes = { pedidoId, items, cb ->
+                    val hrId = selectedHrId ?: hrClientes.find { it.cliente_id == clienteId }?.hoja_ruta_id ?: 0
+                    homeViewModel.registrarRebotes(
+                        pedidoId,
+                        hrId,
+                        items.map { com.baboons.sellers.data.remote.ReboteItemDto(it.productoId, it.cantidad, it.motivo) },
+                        cb
+                    )
+                },
                 onCrearPedido = { id -> 
                     val hrId = selectedHrId ?: hrClientes.find { it.cliente_id == id }?.hoja_ruta_id
                     navController.navigate(Routes.nuevoPedido(id, hrId)) 

@@ -172,6 +172,28 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun registrarRebotes(
+        pedidoId: Int,
+        hojaRutaId: Int,
+        items: List<com.baboons.sellers.data.remote.ReboteItemDto>,
+        onResult: (Boolean, String) -> Unit
+    ) {
+        viewModelScope.launch {
+            val negocioId = TokenStore.getNegocioId(app)
+            try {
+                val resp = api.registrarRebotes(
+                    negocioId,
+                    pedidoId,
+                    com.baboons.sellers.data.remote.RebotesRequest(hojaRutaId, items)
+                )
+                if (resp.isSuccessful) onResult(true, "Rebote registrado")
+                else onResult(false, "No se pudo guardar el rebote (${resp.code()})")
+            } catch (e: Exception) {
+                onResult(false, "Sin conexión: ${e.message}")
+            }
+        }
+    }
+
     fun pedirRefuerzo(items: List<com.baboons.sellers.data.remote.RefuerzoItem>, onResult: (Boolean, String) -> Unit) {
         viewModelScope.launch {
             val hrId = _sharedSelectedHojaRutaId.value
