@@ -365,9 +365,13 @@ fun HomeScreen(
                 )
             )
 
-            if (esAutoVenta && !tecladoAbierto) {
+            if (!tecladoAbierto) {
                 Text(
-                    text = "Auto-Venta: elegí cualquier cliente y vendé lo que hay en el camión.",
+                    text = if (esAutoVenta) {
+                        "Auto-Venta: elegí cualquier cliente y vendé lo que hay en el camión."
+                    } else {
+                        "Chofer: descargá lo que cada cliente ya pidió. La carga viene en la hoja."
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = BaboonsTextSecondary,
                     modifier = Modifier.padding(bottom = 8.dp)
@@ -398,14 +402,15 @@ fun HomeScreen(
                         },
                         onClick = { onClienteClick(cliente.id) },
                         onClickCart = { onClienteCart(cliente.id) },
-                        mostrarVisita = !esAutoVenta
+                        mostrarVisita = !esAutoVenta,
+                        modoDescarga = !esAutoVenta
                     )
                 }
             }
 
             if (!tecladoAbierto) {
                 Text(
-                    text = "Multinegocio Baboons © 2026 - v1.8.0-staging",
+                    text = "Multinegocio Baboons © 2026 - v1.8.1-staging",
                     fontSize = 10.sp,
                     color = BaboonsTextSecondary,
                     textAlign = TextAlign.Center,
@@ -444,9 +449,12 @@ fun HomeScreen(
 
 private fun etiquetaRuta(hr: HojaRutaEntity): String {
     val nro = "Ruta #${hr.numero_interno ?: hr.id}"
-    val tipo = if (hr.tipo_ruta == "autoventa") "Auto-Venta" else null
+    val tipo = if (hr.tipo_ruta == "autoventa") "Auto-Venta" else "HR Tradicional"
     return listOfNotNull(nro, tipo, hr.estado).joinToString(" · ")
 }
+
+internal fun etiquetaTipoHoja(tipoRuta: String?): String =
+    if (tipoRuta == "autoventa") "Auto-Venta" else "HR Tradicional"
 
 @Composable
 fun KPIBox(modifier: Modifier, label: String, value: String, color: Color) {
@@ -475,7 +483,8 @@ fun ClienteCard(
     onToggleVisit: () -> Unit,
     onClick: () -> Unit,
     onClickCart: () -> Unit,
-    mostrarVisita: Boolean = true
+    mostrarVisita: Boolean = true,
+    modoDescarga: Boolean = false
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
@@ -531,6 +540,15 @@ fun ClienteCard(
                     color = BaboonsTextSecondary,
                     maxLines = 1
                 )
+                if (modoDescarga) {
+                    Text(
+                        text = if (hasOrder) "Carga para descargar" else "Sin carga en la hoja",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (hasOrder) BaboonsBlue else BaboonsTextSecondary,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1
+                    )
+                }
                 resultadoVisita?.let {
                     Text(
                         text = it,
@@ -564,8 +582,8 @@ fun ClienteCard(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                Icons.Default.ShoppingCart, 
-                                null, 
+                                if (modoDescarga) Icons.Default.LocalShipping else Icons.Default.ShoppingCart,
+                                contentDescription = if (modoDescarga) "Carga a descargar" else "Vender",
                                 tint = if (hasOrder) Color.White else BaboonsBlue,
                                 modifier = Modifier.size(18.dp)
                             )

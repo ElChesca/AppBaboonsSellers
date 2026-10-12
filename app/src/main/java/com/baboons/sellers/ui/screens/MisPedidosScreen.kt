@@ -121,7 +121,10 @@ fun MisPedidosScreen(
                     contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
                     items(pedidos) { pedido ->
-                        PedidoItemCard(pedido)
+                        PedidoItemCard(
+                            pedido,
+                            tipo = etiquetaTipoHoja(hojasRuta.find { it.id == pedido.hoja_ruta_id }?.tipo_ruta)
+                        )
                     }
                 }
             }
@@ -130,7 +133,7 @@ fun MisPedidosScreen(
 }
 
 @Composable
-fun PedidoItemCard(pedido: PedidoPendienteEntity) {
+fun PedidoItemCard(pedido: PedidoPendienteEntity, tipo: String) {
     val date = Date(pedido.creado_en)
     val formattedDate = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(date)
     val isSynced = pedido.estado_sync != "pendiente"
@@ -182,7 +185,7 @@ fun PedidoItemCard(pedido: PedidoPendienteEntity) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                 Column {
                     if (pedido.hoja_ruta_id != null) {
-                        Text("Ruta #${pedido.hoja_ruta_id}", color = BaboonsBlue, fontWeight = FontWeight.Medium, fontSize = 12.sp)
+                        Text("Ruta #${pedido.hoja_ruta_id} · $tipo", color = BaboonsBlue, fontWeight = FontWeight.Medium, fontSize = 12.sp)
                     }
                     if (!pedido.observaciones.isNullOrBlank()) {
                         Text("Obs: ${pedido.observaciones}", style = MaterialTheme.typography.bodySmall, color = BaboonsTextSecondary)

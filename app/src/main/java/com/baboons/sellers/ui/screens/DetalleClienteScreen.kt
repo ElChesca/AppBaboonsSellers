@@ -15,7 +15,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import com.baboons.sellers.data.local.entities.ClienteEntity
+import com.baboons.sellers.data.local.entities.PedidoPendienteEntity
 import com.baboons.sellers.ui.theme.*
+import org.json.JSONArray
+import org.json.JSONObject
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -26,9 +29,11 @@ fun DetalleClienteScreen(
     onRegistrarCobro: (Double, String, (Boolean, String) -> Unit) -> Unit = { _, _, cb -> cb(false, "") },
     onMarcarResultado: (String, String, (Boolean, String) -> Unit) -> Unit = { _, _, cb -> cb(false, "") },
     esAutoVenta: Boolean = false,
+    pedidosCliente: List<PedidoPendienteEntity> = emptyList(),
     onBack: () -> Unit
 ) {
     val cliente = clientes.find { it.id == clienteId } ?: return
+    val carga = remember(pedidosCliente) { pedidosCliente.flatMap { parseItemsCarga(it.items_json) } }
     var mostrarCobro by remember { mutableStateOf(false) }
     var resultado by remember { mutableStateOf("") }
     var obs by remember { mutableStateOf("") }
@@ -75,15 +80,17 @@ fun DetalleClienteScreen(
                     modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Button(
-                        onClick = { onCrearPedido(clienteId) },
-                        modifier = Modifier.weight(1f).height(56.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = BaboonsBlue)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null)
-                        Spacer(Modifier.width(6.dp))
-                        Text(if (esAutoVenta) "VENDER" else "PEDIDO", fontWeight = FontWeight.Bold)
+                    if (esAutoVenta) {
+                        Button(
+                            onClick = { onCrearPedido(clienteId) },
+                            modifier = Modifier.weight(1f).height(56.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = BaboonsBlue)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("VENDER", fontWeight = FontWeight.Bold)
+                        }
                     }
                     Button(
                         onClick = { mostrarCobro = true },
@@ -177,6 +184,46 @@ fun DetalleClienteScreen(
                                 color = BaboonsTextSecondary,
                                 modifier = Modifier.padding(start = 24.dp)
                             )
+                        }
+                    }
+                }
+            }
+
+            if (!esAutoVenta) item {
+                Spacer(Modifier.height(16.dp))
+                Text("CARGA A DESCARGAR", color = BaboonsTextSecondary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Spacer(Modifier.height(8.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = BaboonsSurface),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        if (carga.isEmpty()) {
+                            Text(
+                                "Esta hoja no trae items para este cliente.",
+                                color = BaboonsTextSecondary,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        } else {
+                            carga.forEach { item ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        item.nombre,
+                                        modifier = Modifier.weight(1f),
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Text(
+                                        "x${item.cantidad.trimCantidad()}",
+                                        color = BaboonsBlue,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(start = 12.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -288,6 +335,26 @@ fun CobroDialog(onDismiss: () -> Unit, onConfirm: (Double, String) -> Unit) {
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )
 }
+
+private data class ItemCarga(val nombre: String, val cantidad: Double)
+
+private fun parseItemsCarga(json: String): List<ItemCarga> {
+    return try {
+        val arr = JSONArray(json)
+        (0 until arr.length()).map { i ->
+            val o = arr.optJSONObject(i) ?: JSONObject()
+            val nombre = listOf("nombre", "producto_nombre", "descripcion")
+                .firstNotNullOfOrNull { key -> o.optString(key).takeIf { it.isNotBlank() } }
+                ?: "Item"
+            ItemCarga(nombre, o.optDouble("cantidad", 0.0))
+        }
+    } catch (_: Exception) {
+        emptyList()
+    }
+}
+
+private fun Double.trimCantidad(): String =
+    if (this % 1.0 == 0.0) toInt().toString() else String.format("%.2f", this)
 
 @Composable
 fun InfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: String) {
