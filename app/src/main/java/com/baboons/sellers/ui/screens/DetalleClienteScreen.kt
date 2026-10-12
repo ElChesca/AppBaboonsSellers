@@ -30,11 +30,14 @@ fun DetalleClienteScreen(
     onMarcarResultado: (String, String, (Boolean, String) -> Unit) -> Unit = { _, _, cb -> cb(false, "") },
     esAutoVenta: Boolean = false,
     pedidosCliente: List<PedidoPendienteEntity> = emptyList(),
+    onRegistrarRebotes: (pedidoId: Int, items: List<ReboteMarcado>, (Boolean, String) -> Unit) -> Unit = { _, _, cb -> cb(false, "") },
     onBack: () -> Unit
 ) {
     val cliente = clientes.find { it.id == clienteId } ?: return
-    val carga = remember(pedidosCliente) { pedidosCliente.flatMap { parseItemsCarga(it.items_json) } }
     var mostrarCobro by remember { mutableStateOf(false) }
+    var montoCobro by remember { mutableStateOf("") }
+    var rechazos by remember { mutableStateOf(mapOf<String, Int>()) }
+    var motivosRechazo by remember { mutableStateOf(mapOf<String, String>()) }
     var resultado by remember { mutableStateOf("") }
     var obs by remember { mutableStateOf("") }
     var msg by remember { mutableStateOf<String?>(null) }
@@ -42,6 +45,7 @@ fun DetalleClienteScreen(
 
     if (mostrarCobro) {
         CobroDialog(
+            montoInicial = montoCobro,
             onDismiss = { mostrarCobro = false },
             onConfirm = { monto, metodo ->
                 onRegistrarCobro(monto, metodo) { ok, m ->
@@ -70,6 +74,7 @@ fun DetalleClienteScreen(
         },
         containerColor = BaboonsBackground,
         bottomBar = {
+            if (!esAutoVenta) return@Scaffold
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 tonalElevation = 8.dp,
@@ -112,29 +117,45 @@ fun DetalleClienteScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            // Card de Info Principal
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = BaboonsSurface),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(cliente.nombre, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                        Spacer(Modifier.height(8.dp))
-                        
-                        InfoRow(icon = Icons.Default.LocationOn, label = "Dirección", value = cliente.direccion ?: "N/A")
-                        InfoRow(icon = Icons.Default.Phone, label = "Teléfono", value = cliente.telefono ?: "N/A")
-                        InfoRow(icon = Icons.Default.Email, label = "Email", value = cliente.email ?: "N/A")
+                if (!esAutoVenta) {
+                    val direccion = cliente.direccion?.takeIf { it.isNotBlank() }
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = BaboonsSurface),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                            Text(cliente.nombre, fontWeight = FontWeight.Bold, maxLines = 2)
+                            Text(
+                                listOfNotNull(direccion, "Saldo $${String.format("%,.0f", cliente.saldo_ctacte)}").joinToString(" · "),
+                                color = BaboonsTextSecondary,
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 2
+                            )
+                        }
+                    }
+                } else {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = BaboonsSurface),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(cliente.nombre, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.height(8.dp))
+                            InfoRow(icon = Icons.Default.LocationOn, label = "Dirección", value = cliente.direccion ?: "N/A")
+                            InfoRow(icon = Icons.Default.Phone, label = "Teléfono", value = cliente.telefono ?: "N/A")
+                            InfoRow(icon = Icons.Default.Email, label = "Email", value = cliente.email ?: "N/A")
+                        }
                     }
                 }
             }
 
-            item { Spacer(Modifier.height(16.dp)) }
+            if (esAutoVenta) item { Spacer(Modifier.height(16.dp)) }
 
-            // Card de Estado Financiero
-            item {
+            if (esAutoVenta) item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = BaboonsSurface),
@@ -189,43 +210,41 @@ fun DetalleClienteScreen(
                 }
             }
 
-            if (!esAutoVenta) item {
-                Spacer(Modifier.height(16.dp))
-                Text("CARGA A DESCARGAR", color = BaboonsTextSecondary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                Spacer(Modifier.height(8.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = BaboonsSurface),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        if (carga.isEmpty()) {
-                            Text(
-                                "Esta hoja no trae items para este cliente.",
-                                color = BaboonsTextSecondary,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        } else {
-                            carga.forEach { item ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        item.nombre,
-                                        modifier = Modifier.weight(1f),
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                    Text(
-                                        "x${item.cantidad.trimCantidad()}",
-                                        color = BaboonsBlue,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(start = 12.dp)
-                                    )
+            if (!esAutoVenta && pedidosCliente.isEmpty()) {
+                item {
+                    Spacer(Modifier.height(16.dp))
+                    Text("Este cliente no tiene un pedido en la hoja.", color = BaboonsTextSecondary, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            if (!esAutoVenta) {
+                items(pedidosCliente, key = { it.uuid_local }) { pedido ->
+                    PedidoDescargaCard(
+                        pedido = pedido,
+                        rechazos = rechazos,
+                        motivos = motivosRechazo,
+                        onRechazo = { clave, cant -> rechazos = rechazos + (clave to cant) },
+                        onMotivo = { clave, motivo -> motivosRechazo = motivosRechazo + (clave to motivo) },
+                        onCobrar = { neto, marcados, pedidoId ->
+                            val texto = if (neto % 1.0 == 0.0) neto.toLong().toString() else String.format("%.2f", neto)
+                            if (marcados.isEmpty()) {
+                                montoCobro = texto
+                                mostrarCobro = true
+                            } else if (pedidoId == null) {
+                                msg = "Sincroniza para poder guardar el rebote."
+                                msgError = true
+                            } else {
+                                onRegistrarRebotes(pedidoId, marcados) { ok, m ->
+                                    if (ok) {
+                                        montoCobro = texto
+                                        mostrarCobro = true
+                                    } else {
+                                        msg = m
+                                        msgError = true
+                                    }
                                 }
                             }
                         }
-                    }
+                    )
                 }
             }
 
@@ -300,8 +319,8 @@ fun DetalleClienteScreen(
 }
 
 @Composable
-fun CobroDialog(onDismiss: () -> Unit, onConfirm: (Double, String) -> Unit) {
-    var monto by remember { mutableStateOf("") }
+fun CobroDialog(montoInicial: String = "", onDismiss: () -> Unit, onConfirm: (Double, String) -> Unit) {
+    var monto by remember { mutableStateOf(montoInicial) }
     var metodo by remember { mutableStateOf("Efectivo") }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -336,20 +355,179 @@ fun CobroDialog(onDismiss: () -> Unit, onConfirm: (Double, String) -> Unit) {
     )
 }
 
-private data class ItemCarga(val nombre: String, val cantidad: Double)
+data class ReboteMarcado(val productoId: Int, val cantidad: Double, val motivo: String)
+
+private data class ItemCarga(val productoId: Int, val nombre: String, val cantidad: Double, val precio: Double)
+
+private val motivosRebote = listOf(
+    "Rechazo Parcial", "Rotura / Merma", "Local Cerrado", "No tiene Dinero", "Error de Carga / Faltante", "Otro"
+)
+
+private fun claveRechazo(uuid: String, productoId: Int) = "$uuid:$productoId"
+
+private fun serverPedidoId(uuid: String): Int? =
+    if (uuid.startsWith("server-")) uuid.removePrefix("server-").toIntOrNull() else null
 
 private fun parseItemsCarga(json: String): List<ItemCarga> {
     return try {
         val arr = JSONArray(json)
-        (0 until arr.length()).map { i ->
-            val o = arr.optJSONObject(i) ?: JSONObject()
+        (0 until arr.length()).mapNotNull { i ->
+            val o = arr.optJSONObject(i) ?: return@mapNotNull null
             val nombre = listOf("nombre", "producto_nombre", "descripcion")
                 .firstNotNullOfOrNull { key -> o.optString(key).takeIf { it.isNotBlank() } }
                 ?: "Item"
-            ItemCarga(nombre, o.optDouble("cantidad", 0.0))
+            val cantidad = o.optDouble("cantidad", 0.0)
+            val precio = when {
+                o.has("precio_unitario") -> o.optDouble("precio_unitario", 0.0)
+                cantidad > 0 && o.has("subtotal") -> o.optDouble("subtotal", 0.0) / cantidad
+                else -> 0.0
+            }
+            ItemCarga(o.optInt("producto_id", 0), nombre, cantidad, precio)
         }
     } catch (_: Exception) {
         emptyList()
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PedidoDescargaCard(
+    pedido: PedidoPendienteEntity,
+    rechazos: Map<String, Int>,
+    motivos: Map<String, String>,
+    onRechazo: (String, Int) -> Unit,
+    onMotivo: (String, String) -> Unit,
+    onCobrar: (Double, List<ReboteMarcado>, Int?) -> Unit
+) {
+    val items = remember(pedido.items_json) { parseItemsCarga(pedido.items_json) }
+    val pedidoId = serverPedidoId(pedido.uuid_local)
+    var motivoAbierto by remember { mutableStateOf<String?>(null) }
+    val lineas = items.map { item ->
+        val clave = claveRechazo(pedido.uuid_local, item.productoId)
+        val rechazado = (rechazos[clave] ?: 0).coerceIn(0, item.cantidad.toInt())
+        val queda = (item.cantidad - rechazado).coerceAtLeast(0.0)
+        Triple(item, clave, rechazado to (queda * item.precio))
+    }
+    val totalPedido = if (items.isEmpty()) pedido.total else items.sumOf { it.cantidad * it.precio }
+    val totalRechazo = lineas.sumOf { (item, _, reb) -> reb.first * item.precio }
+    val aCobrar = (totalPedido - totalRechazo).coerceAtLeast(0.0)
+    val marcados = lineas.mapNotNull { (item, clave, reb) ->
+        if (reb.first <= 0 || item.productoId == 0) null
+        else ReboteMarcado(item.productoId, reb.first.toDouble(), motivos[clave] ?: motivosRebote.first())
+    }
+
+    Column(modifier = Modifier.padding(top = 12.dp)) {
+        Text(
+            "PEDIDO${pedidoId?.let { " #$it" } ?: ""}",
+            color = BaboonsTextSecondary,
+            fontWeight = FontWeight.Bold,
+            fontSize = 12.sp
+        )
+        Spacer(Modifier.height(8.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = BaboonsSurface),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                if (items.isEmpty()) {
+                    Text(
+                        "Sincroniza de nuevo para bajar los items de este pedido.",
+                        color = BaboonsTextSecondary,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+                lineas.forEach { (item, clave, reb) ->
+                    val (rechazado, quedaImporte) = reb
+                    val totalItem = item.cantidad * item.precio
+                    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(item.nombre, fontWeight = FontWeight.Bold, maxLines = 2)
+                                Text(
+                                    "${item.cantidad.trimCantidad()} x $${String.format("%,.0f", item.precio)}",
+                                    color = BaboonsTextSecondary,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            Text(
+                                "$${String.format("%,.0f", totalItem)}",
+                                fontWeight = FontWeight.Bold,
+                                color = BaboonsBlue,
+                                softWrap = false
+                            )
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                            Text("Rebote", style = MaterialTheme.typography.labelSmall, color = BaboonsTextSecondary)
+                            IconButton(onClick = { onRechazo(clave, (rechazado - 1).coerceAtLeast(0)) }, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Default.Remove, contentDescription = "Menos rebote", modifier = Modifier.size(16.dp))
+                            }
+                            Text(rechazado.toString(), fontWeight = FontWeight.Bold, modifier = Modifier.width(24.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                            IconButton(
+                                onClick = { onRechazo(clave, (rechazado + 1).coerceAtMost(item.cantidad.toInt())) },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "Mas rebote", modifier = Modifier.size(16.dp))
+                            }
+                            if (rechazado > 0) {
+                                TextButton(onClick = { motivoAbierto = clave }) {
+                                    Text(motivos[clave] ?: motivosRebote.first(), fontSize = 11.sp, maxLines = 1)
+                                }
+                                DropdownMenu(expanded = motivoAbierto == clave, onDismissRequest = { motivoAbierto = null }) {
+                                    motivosRebote.forEach { motivo ->
+                                        DropdownMenuItem(
+                                            text = { Text(motivo) },
+                                            onClick = { onMotivo(clave, motivo); motivoAbierto = null }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        if (rechazado > 0) {
+                            Text(
+                                "Queda $${String.format("%,.0f", quedaImporte)}",
+                                color = BaboonsWarning,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    }
+                    HorizontalDivider(color = BaboonsBorder, thickness = 0.5.dp)
+                }
+                Spacer(Modifier.height(8.dp))
+                FilaTotal("Total del pedido", totalPedido, BaboonsTextPrimary)
+                if (totalRechazo > 0) FilaTotal("Rebotes", -totalRechazo, BaboonsWarning)
+                FilaTotal("A cobrar", aCobrar, BaboonsBlue)
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = { onCobrar(aCobrar, marcados, pedidoId) },
+                    enabled = items.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = BaboonsSuccess)
+                ) {
+                    Icon(Icons.Default.AttachMoney, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("COBRAR $${String.format("%,.0f", aCobrar)}", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FilaTotal(label: String, monto: Double, color: Color) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, modifier = Modifier.weight(1f), color = BaboonsTextSecondary, style = MaterialTheme.typography.bodySmall)
+        Text(
+            "$${String.format("%,.0f", monto)}",
+            fontWeight = FontWeight.Bold,
+            color = color,
+            softWrap = false
+        )
     }
 }
 

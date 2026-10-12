@@ -410,7 +410,7 @@ fun HomeScreen(
 
             if (!tecladoAbierto) {
                 Text(
-                    text = "Multinegocio Baboons © 2026 - v1.8.1-staging",
+                    text = "Multinegocio Baboons © 2026 - v1.8.2-staging",
                     fontSize = 10.sp,
                     color = BaboonsTextSecondary,
                     textAlign = TextAlign.Center,

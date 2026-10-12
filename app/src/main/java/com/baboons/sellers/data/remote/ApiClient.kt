@@ -123,6 +123,17 @@ data class VentaBordoRequest(
     val metodo_pago: String
 )
 
+data class ReboteItemDto(
+    val producto_id: Int,
+    val cantidad: Double,
+    val motivo: String
+)
+
+data class RebotesRequest(
+    val hoja_ruta_id: Int,
+    val items: List<ReboteItemDto>
+)
+
 data class PedidoItemDto(
     val producto_id: Int,
     val nombre: String,
@@ -290,6 +301,13 @@ interface BaboonsApi {
 
     @GET("api/hojas-ruta/{hrId}/stock-autoventa")
     suspend fun getStockAutoventa(@Path("hrId") hrId: Int): Response<List<StockAutoventaDto>>
+
+    @POST("api/negocios/{negocioId}/mobile/pedidos/{pedidoId}/rebotes")
+    suspend fun registrarRebotes(
+        @Path("negocioId") negocioId: Int,
+        @Path("pedidoId") pedidoId: Int,
+        @Body body: RebotesRequest
+    ): Response<Any>
 
     @POST("api/hojas-ruta/{hrId}/venta-bordo")
     suspend fun registrarVentaBordo(
