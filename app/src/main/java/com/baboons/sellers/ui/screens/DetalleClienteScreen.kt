@@ -31,6 +31,7 @@ fun DetalleClienteScreen(
     esAutoVenta: Boolean = false,
     pedidosCliente: List<PedidoPendienteEntity> = emptyList(),
     onRegistrarRebotes: (pedidoId: Int, items: List<ReboteMarcado>, (Boolean, String) -> Unit) -> Unit = { _, _, cb -> cb(false, "") },
+    onCobrado: () -> Unit = {},
     onBack: () -> Unit
 ) {
     val cliente = clientes.find { it.id == clienteId } ?: return
@@ -49,8 +50,8 @@ fun DetalleClienteScreen(
             onDismiss = { mostrarCobro = false },
             onConfirm = { monto, metodo ->
                 onRegistrarCobro(monto, metodo) { ok, m ->
-                    msg = m; msgError = !ok
-                    if (ok) mostrarCobro = false
+                    if (ok) onCobrado()
+                    else { msg = m; msgError = true; mostrarCobro = false }
                 }
             }
         )

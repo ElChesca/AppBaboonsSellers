@@ -194,6 +194,7 @@ fun MainNavigation() {
                     val hrId = selectedHrId ?: hrClientes.find { it.cliente_id == clienteId }?.hoja_ruta_id ?: 0
                     homeViewModel.marcarResultadoVisita(clienteId, hrId, resultado, obs, cb)
                 },
+                onCobrado = { navController.popBackStack(Routes.HOME, inclusive = false) },
                 onBack = { navController.popBackStack() }
             )
         }
