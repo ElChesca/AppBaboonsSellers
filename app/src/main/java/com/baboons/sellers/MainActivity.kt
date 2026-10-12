@@ -137,6 +137,7 @@ fun MainNavigation() {
 
         composable(Routes.HOME) {
             val selectedHrId by homeViewModel.selectedHojaRutaId.collectAsState()
+            val hojas by homeViewModel.hojasRuta.collectAsState()
             val hrClientes by homeViewModel.hojaRutaClientes.collectAsState(initial = emptyList())
             HomeScreen(
                 onClienteClick = { id -> 
@@ -144,7 +145,9 @@ fun MainNavigation() {
                 },
                 onClienteCart = { id ->
                     val hrId = selectedHrId ?: hrClientes.find { it.cliente_id == id }?.hoja_ruta_id
-                    navController.navigate(Routes.nuevoPedido(id, hrId))
+                    val esAutoVenta = hojas.find { it.id == hrId }?.tipo_ruta == "autoventa"
+                    if (esAutoVenta) navController.navigate(Routes.nuevoPedido(id, hrId))
+                    else navController.navigate(Routes.detalleCliente(id))
                 },
                 onLogout = {
                     com.baboons.sellers.service.LocationTrackingService.stop(context)
@@ -164,10 +167,12 @@ fun MainNavigation() {
             val hojas by homeViewModel.hojasRuta.collectAsState()
             val clientes by homeViewModel.clientes.collectAsState(initial = emptyList())
             val hrClientes by homeViewModel.hojaRutaClientes.collectAsState(initial = emptyList())
+            val pedidos by homeViewModel.pedidos.collectAsState()
             DetalleClienteScreen(
                 clienteId = clienteId,
                 clientes = clientes,
                 esAutoVenta = hojas.find { it.id == selectedHrId }?.tipo_ruta == "autoventa",
+                pedidosCliente = pedidos.filter { it.cliente_id == clienteId && (selectedHrId == null || it.hoja_ruta_id == selectedHrId) },
                 onCrearPedido = { id -> 
                     val hrId = selectedHrId ?: hrClientes.find { it.cliente_id == id }?.hoja_ruta_id
                     navController.navigate(Routes.nuevoPedido(id, hrId)) 
@@ -221,12 +226,14 @@ fun MainNavigation() {
             val hrClientes by homeViewModel.hojaRutaClientes.collectAsState()
             val pedidos by homeViewModel.pedidos.collectAsState()
             val cobros by homeViewModel.cobros.collectAsState()
+            val hojas by homeViewModel.hojasRuta.collectAsState()
             val selectedHrId by homeViewModel.selectedHojaRutaId.collectAsState()
             ResumenJornadaScreen(
                 clientes = clientes,
                 hojaRutaClientes = hrClientes,
                 pedidos = pedidos,
                 cobros = cobros,
+                hojasRuta = hojas,
                 hojaRutaId = selectedHrId,
                 onBack = { navController.popBackStack() }
             )

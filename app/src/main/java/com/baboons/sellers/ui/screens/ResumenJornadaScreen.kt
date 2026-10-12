@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.baboons.sellers.data.local.entities.*
 import com.baboons.sellers.ui.theme.*
@@ -26,12 +27,14 @@ fun ResumenJornadaScreen(
     hojaRutaClientes: List<HojaRutaClienteEntity>,
     pedidos: List<PedidoPendienteEntity>,
     cobros: List<CobroLocalEntity>,
+    hojasRuta: List<HojaRutaEntity>,
     hojaRutaId: Int?,
     onBack: () -> Unit
 ) {
     val itemsHr = hojaRutaClientes.filter { it.hoja_ruta_id == hojaRutaId }
     val visitados = itemsHr.filter { it.visitado }
     val pedidosHr = pedidos.filter { it.hoja_ruta_id == hojaRutaId }
+    val tipoHoja = etiquetaTipoHoja(hojasRuta.find { it.id == hojaRutaId }?.tipo_ruta)
     val cobrosHr = cobros.filter { it.hoja_ruta_id == hojaRutaId }
     val totalPedidos = pedidosHr.sumOf { it.total }
     val totalCobrado = cobrosHr.sumOf { it.monto }
@@ -86,11 +89,12 @@ fun ResumenJornadaScreen(
             }
 
             // Pedidos
-            item { SeccionTitulo("PEDIDOS (${pedidosHr.size})") }
+            item { SeccionTitulo("PEDIDOS · $tipoHoja (${pedidosHr.size})") }
             if (pedidosHr.isEmpty()) {
                 item { Text("Sin pedidos en esta ruta.", color = BaboonsTextSecondary, style = MaterialTheme.typography.bodySmall) }
             }
             items(pedidosHr) { p ->
+                val tipo = etiquetaTipoHoja(hojasRuta.find { it.id == p.hoja_ruta_id }?.tipo_ruta)
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
                     shape = RoundedCornerShape(10.dp),
@@ -98,18 +102,34 @@ fun ResumenJornadaScreen(
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(p.cliente_nombre, fontWeight = FontWeight.Bold)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                p.cliente_nombre,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                tipo,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (tipo == "Auto-Venta") BaboonsWarning else BaboonsBlue,
+                                fontWeight = FontWeight.Bold
+                            )
                             Text(
                                 p.estado_sync,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = if (p.estado_sync == "pendiente") BaboonsError else BaboonsSuccess
                             )
                         }
-                        Text("$${String.format("%,.0f", p.total)}", fontWeight = FontWeight.Bold, color = BaboonsBlue)
+                        Text(
+                            "$${String.format("%,.0f", p.total)}",
+                            fontWeight = FontWeight.Bold,
+                            color = BaboonsBlue,
+                            softWrap = false,
+                            modifier = Modifier.padding(start = 12.dp)
+                        )
                     }
                 }
             }
@@ -127,14 +147,19 @@ fun ResumenJornadaScreen(
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(c.cliente_nombre, fontWeight = FontWeight.Bold)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(c.cliente_nombre, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             Text(c.metodo_pago, style = MaterialTheme.typography.labelSmall, color = BaboonsTextSecondary)
                         }
-                        Text("$${String.format("%,.0f", c.monto)}", fontWeight = FontWeight.Bold, color = BaboonsSuccess)
+                        Text(
+                            "$${String.format("%,.0f", c.monto)}",
+                            fontWeight = FontWeight.Bold,
+                            color = BaboonsSuccess,
+                            softWrap = false,
+                            modifier = Modifier.padding(start = 12.dp)
+                        )
                     }
                 }
             }
